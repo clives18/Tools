@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capital C — Foundations for Scale</title>
+<style>
+/* ================================================================
+   TOKENS — edit these variables to restyle the entire app
+================================================================ */
+:root {
+  --navy:         #000000;
+  --navy-mid:     #1a1a1a;
+  --teal:         #136260;
+  --teal-light:   #1d8a87;
+  --teal-pale:    #e8f4f3;
+  --slate:        #4a5568;
+  --mid-grey:     #B7B7B7;
+  --light-grey:   #f0f2f5;
+  --border:       #CDE1E0;
+  --white:        #ffffff;
+
+  /* Priority row highlights — restrained */
+  --pri-a-bg:     #fdfbe6;
+  --pri-a-border: #e0d98a;
+  --pri-b-bg:     #f5f7fa;
+  --pri-c-bg:     transparent;
+
+  /* Maturity colours — vivid continuum: red → pink → amber → light green → green */
+  --m1:    #ffffff;  --m1-bg: #e8251a;
+  --m2:    #c0392b;  --m2-bg: #f4a0a0;
+  --m3:    #7a5700;  --m3-bg: #f5b800;
+  --m4:    #1a5c2a;  --m4-bg: #90d67a;
+  --m5:    #ffffff;  --m5-bg: #27a842;
+
+  --font: Helvetica, Arial, sans-serif;
+  --radius: 6px;
+  --shadow: 0 1px 4px rgba(0,0,0,.07);
+}
+
+/* ================================================================ RESET */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; scroll-behavior: smooth; }
+body { font-family: var(--font); background: #f4f6f8; color: var(--navy); min-height: 100vh; }
+
+/* ================================================================ TOPBAR */
+.topbar {
+  background: var(--teal);
+  color: #fff;
+  padding: 0 28px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(19,98,96,.25);
+}
+.topbar-brand { display: flex; align-items: center; gap: 14px; }
+.brand-logo {
+  display: flex; align-items: center;
+  flex-shrink: 0;
+}
+.brand-name { font-size: 11px; font-weight: 600; letter-spacing: .5px; color: rgba(255,255,255,.7); margin-bottom: 1px; }
+.brand-title { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: -.1px; }
+.topbar-actions { display: flex; gap: 8px; align-items: center; }
+
+/* ================================================================ LAYOUT */
+.body-layout { display: flex; flex: 1; min-height: calc(100vh - 56px); }
+
+/* ================================================================ SIDEBAR */
+.sidebar {
+  width: 196px;
+  flex-shrink: 0;
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: 56px;
+  height: calc(100vh - 56px);
+  overflow-y: auto;
+  padding: 18px 0 24px;
+}
+.sidebar-heading {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--mid-grey);
+  padding: 0 16px 10px;
+}
+.nav-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 16px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  color: var(--slate); font-size: 13px; font-weight: 500;
+  text-decoration: none;
+  transition: all .12s;
+}
+.nav-item:hover { background: var(--light-grey); color: var(--navy); }
+.nav-item.active { border-left-color: var(--teal); background: var(--teal-pale); color: var(--teal); font-weight: 600; }
+.nav-badge {
+  background: var(--light-grey); color: var(--mid-grey);
+  font-size: 10px; font-weight: 700;
+  padding: 1px 6px; border-radius: 10px; min-width: 22px; text-align: center;
+}
+
+/* ================================================================ MAIN */
+.main { flex: 1; padding: 22px 26px; min-width: 0; }
+
+/* ================================================================ DASHBOARD */
+.dashboard {
+  margin-bottom: 28px;
+}
+.dashboard-header {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 18px;
+}
+.dashboard-title {
+  font-size: 11px; font-weight: 700; letter-spacing: 1.4px;
+  text-transform: uppercase; color: var(--mid-grey);
+}
+.dashboard-meta {
+  font-size: 11px; color: var(--mid-grey);
+}
+
+/* Top KPI strip */
+.kpi-strip {
+  display: flex; gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 22px;
+  box-shadow: var(--shadow);
+}
+.kpi-block {
+  flex: 1; background: var(--white);
+  padding: 16px 20px 14px;
+  text-align: center;
+}
+.kpi-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.1px;
+  text-transform: uppercase; color: var(--mid-grey);
+  margin-bottom: 7px;
+}
+.kpi-value {
+  font-size: 28px; font-weight: 700; color: var(--navy);
+  line-height: 1; letter-spacing: -.5px;
+}
+.kpi-sub { font-size: 11px; color: var(--mid-grey); margin-top: 4px; }
+
+/* Dial card grid */
+.dial-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+.dial-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 22px 16px 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: box-shadow .15s, border-color .15s, transform .15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+}
+.dial-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,.10);
+  border-color: #c0cdd8;
+  transform: translateY(-2px);
+}
+.dial-cat-name {
+  font-size: 19px; font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 14px;
+  letter-spacing: .2px;
+  line-height: 1.3;
+}
+
+/* SVG dial */
+.dial-wrap {
+  position: relative;
+  width: 90px; height: 90px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+.dial-wrap svg { display: block; }
+.dial-centre {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  pointer-events: none;
+}
+.dial-score {
+  font-size: 20px; font-weight: 700;
+  color: var(--navy); line-height: 1;
+  letter-spacing: -.5px;
+}
+.dial-score-label {
+  font-size: 9px; font-weight: 600;
+  color: var(--mid-grey); text-transform: uppercase;
+  letter-spacing: .8px; margin-top: 1px;
+}
+
+/* Card stats */
+.dial-stats {
+  width: 100%;
+  display: flex; flex-direction: column; gap: 5px;
+  border-top: 1px solid var(--border);
+  padding-top: 11px;
+  margin-top: 2px;
+}
+.dial-stat {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11px;
+}
+.dial-stat-label { color: var(--mid-grey); }
+.dial-stat-value { font-weight: 700; color: var(--navy); }
+.dial-stat-value.pri-a-val { color: #a07800; }
+.dial-stat-value.unscored { color: var(--mid-grey); font-weight: 400; font-style: italic; }
+
+
+/* ================================================================ LEGEND + FILTERS */
+.legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--slate); }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+.filters { display: flex; gap: 7px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
+.filter-label { font-size: 11px; font-weight: 700; color: var(--mid-grey); text-transform: uppercase; letter-spacing: .8px; margin-right: 4px; }
+
+/* ================================================================ BUTTONS */
+.btn {
+  padding: 6px 13px; border-radius: var(--radius);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  border: 1px solid transparent; transition: all .13s;
+  letter-spacing: .2px; font-family: var(--font); line-height: 1.4;
+}
+.btn-ghost { background: transparent; border-color: rgba(255,255,255,.3); color: rgba(255,255,255,.85); }
+.btn-ghost:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.5); color: #fff; }
+.btn-outline { background: var(--white); border-color: var(--border); color: var(--slate); }
+.btn-outline:hover { border-color: var(--teal); color: var(--teal); }
+.btn-outline.active { background: var(--teal-pale); border-color: var(--teal); color: var(--teal); }
+.btn-danger { background: transparent; border-color: #c0392b; color: #c0392b; }
+.btn-danger:hover { background: var(--m1-bg); }
+
+/* ================================================================ CATEGORY CARD */
+.category-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.category-header {
+  display: flex; align-items: center; padding: 12px 16px;
+  cursor: pointer; user-select: none;
+  border-bottom: 1px solid var(--border);
+  background: #fafbfc; gap: 10px;
+  transition: background .12s;
+}
+.category-header:hover { background: var(--teal-pale); }
+.category-icon {
+  width: 26px; height: 26px; border-radius: 5px;
+  background: var(--navy); color: #fff;
+  font-size: 13px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.category-title { font-size: 14px; font-weight: 700; color: var(--navy); flex: 1; }
+.category-meta { display: flex; gap: 10px; align-items: center; font-size: 12px; color: var(--mid-grey); }
+.cat-avg-pill {
+  font-size: 12px; font-weight: 700; padding: 2px 9px;
+  border-radius: 10px; min-width: 46px; text-align: center;
+}
+.collapse-icon { font-size: 11px; color: var(--mid-grey); transition: transform .2s; }
+.hdr-collapsed .collapse-icon { transform: rotate(-90deg); }
+
+/* ================================================================ ITEMS TABLE */
+.items-table { width: 100%; border-collapse: collapse; }
+.items-table thead th {
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--mid-grey);
+  padding: 8px 14px; text-align: left;
+  border-bottom: 1px solid var(--border);
+  background: #fafbfc;
+}
+.th-ref { width: 36px; text-align: center !important; color: var(--mid-grey); }
+.th-priority { width: 112px; text-align: center !important; }
+.th-maturity { width: 210px; text-align: center !important; }
+.th-notes { width: 540px; }
+.th-delete { width: 32px; }
+
+.td-ref {
+  padding: 9px 6px 9px 14px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mid-grey);
+  width: 36px;
+  letter-spacing: .3px;
+  user-select: none;
+}
+
+.item-row { border-bottom: 1px solid var(--border); transition: background .1s; }
+.item-row:last-child { border-bottom: none; }
+.item-row.pri-a { background: var(--pri-a-bg); }
+.item-row.pri-a:hover { background: #faf7d4; }
+.item-row.pri-b { background: var(--pri-b-bg); }
+.item-row.pri-b:hover { background: #ebeff6; }
+.item-row.pri-c:hover { background: var(--light-grey); }
+
+.td-name { padding: 9px 14px; font-size: 13px; font-weight: 500; color: var(--navy); min-width: 160px; }
+.td-priority { padding: 7px 14px; text-align: center; }
+.td-maturity { padding: 7px 14px; text-align: center; }
+.td-notes { padding: 7px 14px; }
+
+/* Priority A List toggle button */
+.btn-pri-a {
+  background: var(--white);
+  border-color: #a07800;
+  color: #a07800;
+}
+.btn-pri-a:hover {
+  background: #fdfbe6;
+  border-color: #7a5700;
+  color: #7a5700;
+}
+.btn-pri-a.active {
+  background: #a07800;
+  border-color: #a07800;
+  color: #fff;
+}
+
+/* Priority A active banner */
+.pri-a-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fdfbe6;
+  border: 1px solid #e0d98a;
+  border-radius: var(--radius);
+  padding: 9px 16px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #7a5700;
+}
+.pri-a-banner-close {
+  background: none; border: 1px solid #e0d98a;
+  color: #a07800; font-size: 11px; font-weight: 600;
+  padding: 3px 10px; border-radius: 4px; cursor: pointer;
+  font-family: var(--font); transition: all .12s;
+}
+.pri-a-banner-close:hover { background: #a07800; color: #fff; border-color: #a07800; }
+
+/* Empty-category notice when Priority A filter is active */
+.no-pri-a-msg {
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--mid-grey);
+  font-style: italic;
+  display: none;
+}
+
+
+.pri-seg { display: inline-flex; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+.pri-seg input[type=radio] { display: none; }
+.pri-seg label {
+  padding: 4px 9px; font-size: 11px; font-weight: 700; cursor: pointer;
+  color: var(--mid-grey); border-right: 1px solid var(--border);
+  transition: all .1s; user-select: none; background: var(--white);
+}
+.pri-seg label:last-of-type { border-right: none; }
+.pri-seg label:hover { color: var(--navy); background: var(--light-grey); }
+.pri-seg .ra:checked + label { background: #b5960a; border-color: #b5960a; color: #fff; }
+.pri-seg .rb:checked + label { background: var(--slate); border-color: var(--slate); color: #fff; }
+.pri-seg .rc:checked + label { background: var(--mid-grey); border-color: var(--mid-grey); color: #fff; }
+
+/* Score chips */
+.score-chips { display: inline-flex; gap: 3px; }
+.score-chip {
+  width: 29px; height: 27px; border-radius: 4px;
+  border: 1.5px solid var(--border); background: var(--white);
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  color: var(--mid-grey);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .1s; font-family: var(--font);
+}
+.score-chip:hover { border-color: var(--slate); color: var(--navy); transform: translateY(-1px); }
+.sc-a1 { background: var(--m1-bg) !important; border-color: var(--m1-bg) !important; color: var(--m1) !important; }
+.sc-a2 { background: var(--m2-bg) !important; border-color: var(--m2-bg) !important; color: var(--m2) !important; }
+.sc-a3 { background: var(--m3-bg) !important; border-color: var(--m3-bg) !important; color: var(--m3) !important; }
+.sc-a4 { background: var(--m4-bg) !important; border-color: var(--m4-bg) !important; color: var(--m4) !important; }
+.sc-a5 { background: var(--m5-bg) !important; border-color: var(--m5-bg) !important; color: var(--m5) !important; }
+.sc-clr { width: 22px !important; height: 22px !important; font-size: 9px !important; color: var(--border) !important; border-color: var(--border) !important; margin-left: 2px; }
+.sc-clr:hover { color: var(--m1) !important; border-color: var(--m1) !important; background: var(--m1-bg) !important; transform: none !important; }
+
+/* Delete button */
+.td-delete { padding: 7px 8px; text-align: center; width: 32px; }
+.btn-delete {
+  width: 22px; height: 22px; border-radius: 4px;
+  border: 1px solid transparent; background: transparent;
+  color: var(--border); cursor: pointer; font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .12s; font-family: var(--font); padding: 0;
+  line-height: 1;
+}
+.btn-delete:hover { background: var(--m1-bg); border-color: var(--m1); color: var(--m1); }
+.item-row:hover .btn-delete { color: var(--mid-grey); }
+
+/* Add item row */
+.add-item-row td { padding: 8px 14px; border-top: 1px dashed var(--border) !important; background: #fafbfc; }
+.add-item-form { display: flex; gap: 7px; align-items: center; }
+.add-item-input {
+  flex: 1; padding: 5px 9px; border: 1px solid var(--border);
+  border-radius: 4px; font-size: 12px; color: var(--navy);
+  font-family: var(--font); background: var(--white);
+  transition: border-color .12s;
+}
+.add-item-input:focus { outline: none; border-color: var(--teal-light); }
+.add-item-input::placeholder { color: var(--mid-grey); }
+.btn-add-item {
+  padding: 5px 11px; border-radius: 4px;
+  border: 1px solid var(--teal); background: var(--white);
+  color: var(--teal); font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: var(--font); white-space: nowrap;
+  transition: all .12s;
+}
+.btn-add-item:hover { background: var(--teal); color: var(--white); }
+
+/* Notes */
+.notes-input {
+  width: 100%; padding: 4px 7px;
+  border: 1px solid var(--border); border-radius: 4px;
+  font-size: 12px; color: var(--navy); font-family: var(--font);
+  background: transparent; resize: none; min-height: 28px;
+  transition: border-color .12s;
+}
+.notes-input:focus { outline: none; border-color: var(--teal-light); background: var(--white); }
+
+/* Collapsed */
+.cat-body.body-collapsed { display: none; }
+.item-row.row-hidden { display: none; }
+
+/* Modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.4); z-index: 200;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--white); border-radius: 8px; padding: 26px 30px;
+  max-width: 420px; width: 92%;
+  box-shadow: 0 8px 40px rgba(0,0,0,.2);
+}
+.modal h3 { font-size: 16px; color: var(--navy); margin-bottom: 9px; }
+.modal p { font-size: 13px; color: var(--slate); margin-bottom: 20px; line-height: 1.55; }
+.modal-actions { display: flex; gap: 9px; justify-content: flex-end; }
+.modal-field { margin-bottom: 14px; }
+.modal-field label { display: block; font-size: 11px; font-weight: 700; color: var(--mid-grey); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 5px; }
+.modal-input {
+  width: 100%; padding: 7px 10px; border: 1px solid var(--border);
+  border-radius: 4px; font-size: 13px; color: var(--navy);
+  font-family: var(--font); background: var(--white);
+  transition: border-color .12s;
+}
+.modal-input:focus { outline: none; border-color: var(--teal-light); }
+.modal-input::placeholder { color: var(--mid-grey); }
+.modal-error { font-size: 12px; color: var(--m1-bg); margin-top: 5px; display: none; }
+.modal-error.visible { display: block; }
+
+/* btn-primary */
+.btn-primary { background: var(--teal); border-color: var(--teal); color: #fff; }
+.btn-primary:hover { background: var(--teal-light); border-color: var(--teal-light); }
+
+/* Delete section button on category header */
+.btn-delete-section {
+  padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
+  border: 1px solid transparent; background: transparent;
+  color: var(--mid-grey); cursor: pointer; font-family: var(--font);
+  transition: all .12s; white-space: nowrap; flex-shrink: 0;
+}
+.btn-delete-section:hover { background: var(--m1-bg); border-color: #e8251a; color: #e8251a; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Print */
+@media print {
+  .topbar, .sidebar, .filters, .legend, .topbar-actions,
+  .dashboard, .collapse-icon { display: none !important; }
+  .body-layout { display: block; }
+  .main { padding: 0; }
+  .cat-body { display: block !important; }
+  .category-card { page-break-inside: avoid; box-shadow: none; border: 1px solid #ccc; margin-bottom: 12px; }
+  .notes-input { border: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <!-- Capital C wordmark: "Capital" in white, "C" in a lighter accent teal -->
+    <div class="brand-logo">
+      <svg height="32" viewBox="0 0 110 32" xmlns="http://www.w3.org/2000/svg">
+        <text x="0" y="24" font-family="Helvetica, Arial, sans-serif" font-weight="800" font-size="22" fill="#ffffff" letter-spacing="-0.5">Capital</text>
+        <text x="84" y="24" font-family="Helvetica, Arial, sans-serif" font-weight="800" font-size="22" fill="#CDE1E0" letter-spacing="-0.5"> C</text>
+      </svg>
+    </div>
+    <div style="width:1px;height:28px;background:rgba(255,255,255,.25);margin:0 14px;flex-shrink:0;"></div>
+    <div>
+      <div class="brand-title">Foundations for Scale</div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-ghost" onclick="window.print()">⎙ Print / PDF</button>
+    <button class="btn btn-ghost" onclick="openReset()">↺ Reset</button>
+  </div>
+</div>
+
+<div class="body-layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar"></nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="dashboard" id="dashboard">
+
+      <!-- KPI STRIP -->
+      <div class="kpi-strip" id="kpi-strip">
+        <div class="kpi-block">
+          <div class="kpi-label">Overall Avg</div>
+          <div class="kpi-value" id="kpi-avg">—</div>
+          <div class="kpi-sub">across all scored items</div>
+        </div>
+        <div class="kpi-block">
+          <div class="kpi-label">Items Scored</div>
+          <div class="kpi-value" id="kpi-scored">0</div>
+          <div class="kpi-sub" id="kpi-scored-sub">of 0 total</div>
+        </div>
+        <div class="kpi-block">
+          <div class="kpi-label">Priority A</div>
+          <div class="kpi-value" id="kpi-a">0</div>
+          <div class="kpi-sub">items flagged for focus</div>
+        </div>
+        <div class="kpi-block">
+          <div class="kpi-label">Sections</div>
+          <div class="kpi-value" id="kpi-cats">0</div>
+          <div class="kpi-sub" id="kpi-cats-sub">areas assessed</div>
+        </div>
+      </div>
+
+      <!-- DIAL GRID -->
+      <div class="dashboard-header">
+        <span class="dashboard-title">Category Maturity</span>
+        <span class="dashboard-meta" id="dash-meta"></span>
+      </div>
+      <div class="dial-grid" id="dial-grid"></div>
+
+    </div>
+
+    <!-- LEGEND -->
+    <div class="legend">
+      <span style="font-size:10px;font-weight:700;color:var(--mid-grey);text-transform:uppercase;letter-spacing:.8px;">Maturity Scale:</span>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--m1-bg)"></div>1 Immature</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--m2-bg)"></div>2 Below Avg</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--m3-bg)"></div>3 Average</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--m4-bg)"></div>4 Above Avg</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--m5-bg)"></div>5 Very Mature</div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filters">
+      <span class="filter-label">Filter:</span>
+      <button class="btn btn-outline active" id="filter-all"      onclick="setFilter('all')">All Items</button>
+      <button class="btn btn-outline"        id="filter-low"      onclick="setFilter('low')">Low Maturity (1–2)</button>
+      <button class="btn btn-outline"        id="filter-unscored" onclick="setFilter('unscored')">Unscored</button>
+      <button class="btn btn-pri-a"          id="btn-priority-a"  onclick="togglePriorityA()">★ Priority A List</button>
+      <button class="btn btn-outline" style="margin-left:auto" onclick="toggleAll(true)">Expand All</button>
+      <button class="btn btn-outline"                           onclick="toggleAll(false)">Collapse All</button>
+      <button class="btn btn-primary"                           onclick="openAddSection()">+ Add Section</button>
+    </div>
+
+    <!-- PRIORITY A BANNER -->
+    <div class="pri-a-banner" id="pri-a-banner" style="display:none">
+      <span>★ Showing Priority A items only</span>
+      <button class="pri-a-banner-close" onclick="togglePriorityA()" title="Clear filter">✕ Clear</button>
+    </div>
+
+    <!-- CARDS -->
+    <div id="cards-container"></div>
+
+  </main>
+</div>
+
+<!-- RESET MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>Reset Assessment</h3>
+    <p>This will clear all saved priorities, maturity scores, and notes. This cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeReset()">Cancel</button>
+      <button class="btn btn-danger"  onclick="doReset()">Reset All</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD SECTION MODAL -->
+<div class="modal-overlay" id="modal-section">
+  <div class="modal">
+    <h3>Add New Section</h3>
+    <p>Create a new capability section. You can add items to it once it appears on the page.</p>
+    <div class="modal-field">
+      <label>Section Name</label>
+      <input type="text" class="modal-input" id="section-name-input" placeholder="e.g. Legal & Compliance" maxlength="40"
+        onkeydown="if(event.key==='Enter')doAddSection()">
+      <div class="modal-error" id="section-name-error">Please enter a section name.</div>
+    </div>
+    <div class="modal-field">
+      <label>Icon (optional emoji)</label>
+      <input type="text" class="modal-input" id="section-icon-input" placeholder="e.g. ⚖️" maxlength="4"
+        style="width:100px">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeAddSection()">Cancel</button>
+      <button class="btn btn-primary" onclick="doAddSection()">Add Section</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE SECTION CONFIRM MODAL -->
+<div class="modal-overlay" id="modal-del-section">
+  <div class="modal">
+    <h3 id="del-section-title">Delete Section</h3>
+    <p id="del-section-msg">This will permanently remove this section and all its items. This cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeDelSection()">Cancel</button>
+      <button class="btn btn-danger"  onclick="confirmDelSection()">Delete Section</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   DATA SOURCE
+   To edit items: find the matching category object below and update
+   the items array. Each item: { priority:'A'|'B'|'C', name:'string', score:1-5 or null }
+================================================================ */
+const CATS = [
+  { id:'corporate',   label:'Corporate',   icon:'🏛',
+    items:[
+      {priority:'C', name:'Board Effectiveness',  score:null},
+      {priority:'C', name:'Governance Standards',  score:null},
+      {priority:'C', name:'Capital Management',    score:null},
+      {priority:'C', name:'Risk Management',       score:null},
+      {priority:'C', name:'CEO Engagement',        score:null},
+      {priority:'C', name:'Strategic Input',       score:null},
+      {priority:'C', name:'Investor Relations',    score:null},
+      {priority:'C', name:'Defence Ready',         score:null},
+      {priority:'C', name:'Freedom to Operate',    score:null},
+      {priority:'C', name:'IP Management',         score:null},
+      {priority:'C', name:'Insurance',             score:null},
+    ]},
+  { id:'fin-admin',   label:'Fin & Admin', icon:'📊',
+    items:[
+      {priority:'C', name:'Reporting',             score:null},
+      {priority:'C', name:'Billing',               score:5},
+      {priority:'C', name:'Treasury Mgt',          score:null},
+      {priority:'C', name:'AP & AR',               score:null},
+      {priority:'C', name:'Procurement',           score:null},
+      {priority:'C', name:'Budgets & Forecasting', score:null},
+      {priority:'C', name:'Expense Management',    score:null},
+      {priority:'C', name:'Financial Systems',     score:null},
+      {priority:'C', name:'Financial Controls',    score:null},
+      {priority:'C', name:'Contract Management',   score:null},
+      {priority:'A', name:'Facilities Management', score:null},
+      {priority:'C', name:'Insurance',             score:null},
+      {priority:'C', name:'Revenue Assurance',     score:null},
+    ]},
+  { id:'people',      label:'People',      icon:'👥',
+    items:[
+      {priority:'C', name:'Recruiting',            score:null},
+      {priority:'C', name:'Staff Onboarding',      score:null},
+      {priority:'C', name:'Records Management',    score:null},
+      {priority:'C', name:'Internal Comms',        score:null},
+      {priority:'C', name:'Performance Mgt',       score:null},
+      {priority:'C', name:'Payroll',               score:null},
+      {priority:'C', name:'Talent Development',    score:null},
+      {priority:'C', name:'Employee Satisfaction', score:null},
+      {priority:'C', name:'Reporting',             score:null},
+      {priority:'C', name:'HRIS',                  score:null},
+      {priority:'C', name:'Rewards & Incentives',  score:null},
+      {priority:'C', name:'Remuneration',          score:null},
+      {priority:'A', name:'Culture',               score:null},
+    ]},
+  { id:'marketing',   label:'Marketing',   icon:'📣',
+    items:[
+      {priority:'B', name:'Brand',                 score:3},
+      {priority:'C', name:'Lead Gen',              score:3},
+      {priority:'C', name:'Marketing Materials',   score:5},
+      {priority:'C', name:'Price Management',      score:1},
+      {priority:'C', name:'Promotions',            score:2},
+      {priority:'C', name:'Communications',        score:1},
+      {priority:'C', name:'Reporting',             score:3},
+      {priority:'C', name:'Product / Service Mgt', score:3},
+      {priority:'C', name:'Competitor Monitoring', score:2},
+      {priority:'C', name:'Public Relations',      score:3},
+      {priority:'C', name:'Market Research',       score:3},
+      {priority:'C', name:'Product Management',    score:2},
+      {priority:'C', name:'Segment — Personas',    score:3},
+      {priority:'C', name:'Value Proposition',     score:3},
+      {priority:'B', name:'Case Studies',          score:2},
+    ]},
+  { id:'sales',       label:'Sales',       icon:'💼',
+    items:[
+      {priority:'C', name:'Go to Market Plan',     score:2},
+      {priority:'C', name:'Prospecting',           score:3},
+      {priority:'C', name:'Quoting / Proposals',   score:1},
+      {priority:'C', name:'Presenting & Closing',  score:3},
+      {priority:'C', name:'Sales Management',      score:2},
+      {priority:'C', name:'Reporting',             score:2},
+      {priority:'C', name:'Customer Experience',   score:3},
+      {priority:'C', name:'Retention | Repeat',    score:4},
+      {priority:'C', name:'Referral',              score:1},
+      {priority:'C', name:'CRM',                   score:1},
+    ]},
+  { id:'customer',    label:'Customer',    icon:'🤝',
+    items:[
+      {priority:'C', name:'Onboarding',            score:1},
+      {priority:'C', name:'Training',              score:2},
+      {priority:'C', name:'Customer Experience',   score:2},
+      {priority:'C', name:'CSAT | NPS',            score:2},
+      {priority:'C', name:'Help Desk',             score:2},
+      {priority:'C', name:'Reimbursement',         score:3},
+      {priority:'C', name:'Communications',        score:null},
+    ]},
+  { id:'operations',  label:'Operations',  icon:'⚙️',
+    items:[
+      {priority:'C', name:'Asset Management',      score:1},
+      {priority:'C', name:'Logistics',             score:2},
+      {priority:'C', name:'Maintenance',           score:2},
+      {priority:'C', name:'Repairs',               score:2},
+      {priority:'C', name:'Inventory Management',  score:2},
+      {priority:'C', name:'Order Fulfillment',     score:3},
+      {priority:'C', name:'Operational Reporting', score:null},
+      {priority:'C', name:'Systems',               score:null},
+      {priority:'C', name:'Automation',            score:null},
+      {priority:'C', name:'Safety',                score:null},
+      {priority:'C', name:'Supply Chain',          score:null},
+      {priority:'C', name:'Procurement',           score:null},
+      {priority:'C', name:'Certifications',        score:null},
+    ]},
+  { id:'technology',  label:'Technology',  icon:'💻',
+    items:[
+      {priority:'C', name:'Internal Network',      score:3},
+      {priority:'C', name:'WAN',                   score:null},
+      {priority:'C', name:'Internal IT Support',   score:null},
+      {priority:'C', name:'Customer Support Sys',  score:null},
+      {priority:'C', name:'Cyber Security',        score:null},
+      {priority:'C', name:'IT Infrastructure',     score:null},
+      {priority:'C', name:'Uptime Reporting',      score:null},
+      {priority:'C', name:'Disaster Recovery',     score:null},
+      {priority:'C', name:'Monitoring',            score:null},
+      {priority:'C', name:'Compliance',            score:null},
+      {priority:'C', name:'Redundancy',            score:null},
+    ]},
+  { id:'product-dev', label:'Product Dev', icon:'🔬',
+    items:[
+      {priority:'C', name:'Quality Management',    score:4},
+      {priority:'C', name:'Market Research',       score:1},
+      {priority:'C', name:'Engineering',           score:null},
+      {priority:'C', name:'Prototyping',           score:null},
+      {priority:'C', name:'Testing',               score:null},
+      {priority:'C', name:'Reporting',             score:null},
+      {priority:'C', name:'Systems',               score:null},
+      {priority:'C', name:'Release Mgt',           score:null},
+      {priority:'C', name:'Product Roadmap',       score:null},
+    ]},
+];
+
+/* ================================================================ SCORE META */
+const SCORE_COLORS = {
+  1:{ color:'var(--m1)', bg:'var(--m1-bg)' },
+  2:{ color:'var(--m2)', bg:'var(--m2-bg)' },
+  3:{ color:'var(--m3)', bg:'var(--m3-bg)' },
+  4:{ color:'var(--m4)', bg:'var(--m4-bg)' },
+  5:{ color:'var(--m5)', bg:'var(--m5-bg)' },
+};
+const SCORE_LABELS = {1:'Immature',2:'Below Average',3:'Average',4:'Above Average',5:'Very Mature'};
+
+/* ================================================================ STATE */
+const SK = 'capitalc_maturity_v4';   // bumped version — fresh key
+let S = {};   // { [catId]: { items:[{name,priority,score,notes},...] } }
+
+function loadS() {
+  try {
+    const r = localStorage.getItem(SK);
+    if (r) {
+      const saved = JSON.parse(r);
+      // Restore items for built-in sections
+      CATS.forEach(cat => {
+        if (saved[cat.id] && Array.isArray(saved[cat.id].items)) {
+          cat.items = saved[cat.id].items;
+        }
+      });
+      // Re-create any custom sections that were added by the user
+      const builtinIds = new Set(CATS.map(c=>c.id));
+      if (Array.isArray(saved._customSections)) {
+        saved._customSections.forEach(cs => {
+          if (!builtinIds.has(cs.id)) {
+            const newCat = {
+              id: cs.id, label: cs.label, icon: cs.icon || '📋',
+              items: (saved[cs.id] && Array.isArray(saved[cs.id].items)) ? saved[cs.id].items : [{ priority:'C', name:'New Item', score:null }],
+              _origItems: []
+            };
+            newCat._origItems = newCat.items.map(x=>({...x}));
+            CATS.push(newCat);
+          }
+        });
+      }
+      S = saved;
+    }
+  } catch(e) { S = {}; }
+}
+
+function saveS() {
+  // Serialise entire items arrays into S before saving
+  CATS.forEach(cat => {
+    if (!S[cat.id]) S[cat.id] = {};
+    S[cat.id].items = cat.items.map((item, i) => ({
+      name:     item.name,
+      priority: ePri(cat.id, i),
+      score:    eSco(cat.id, i),
+      notes:    eNot(cat.id, i),
+    }));
+  });
+  // Persist custom section metadata so they survive refresh
+  const builtinIds = new Set(_origCats ? _origCats.map(c=>c.id) : []);
+  S._customSections = CATS
+    .filter(c => !builtinIds.has(c.id))
+    .map(c => ({ id: c.id, label: c.label, icon: c.icon }));
+  localStorage.setItem(SK, JSON.stringify(S));
+}
+
+// Per-cell overrides (used during a session before save flushes)
+function getI(cid, idx) { return (S[cid] && S[cid][`r${idx}`]) || {}; }
+function setI(cid, idx, key, val) {
+  if (!S[cid]) S[cid] = {};
+  const k = `r${idx}`;
+  if (!S[cid][k]) S[cid][k] = {};
+  S[cid][k][key] = val;
+  saveS();
+}
+
+function ePri(cid, idx) {
+  const s = getI(cid, idx);
+  if (s.priority !== undefined) return s.priority;
+  return CATS.find(c => c.id === cid).items[idx].priority || 'C';
+}
+function eSco(cid, idx) {
+  const s = getI(cid, idx);
+  if (s.score !== undefined) return s.score;
+  return CATS.find(c => c.id === cid).items[idx].score || null;
+}
+function eNot(cid, idx) {
+  return getI(cid, idx).notes || '';
+}
+
+/* ================================================================ ADD / DELETE ITEMS */
+function addItem(cid) {
+  const input = document.getElementById(`add-input-${cid}`);
+  const name  = (input ? input.value : '').trim();
+  if (!name) { if(input) input.focus(); return; }
+
+  const cat = CATS.find(c => c.id === cid);
+  cat.items.push({ priority: 'C', name, score: null });
+
+  // Clear any stale per-row overrides for the new index so they inherit defaults
+  const newIdx = cat.items.length - 1;
+  if (!S[cid]) S[cid] = {};
+  delete S[cid][`r${newIdx}`];
+
+  saveS();
+  if (input) input.value = '';
+  rebuildCategory(cid);
+  refreshMeta(cid);
+  renderSidebar();
+  renderDashboard();
+  
+}
+
+function deleteItem(cid, idx) {
+  const cat = CATS.find(c => c.id === cid);
+  if (cat.items.length <= 1) {
+    // Prevent deleting the very last item
+    alert('Each category must have at least one item.');
+    return;
+  }
+
+  // Snapshot current user values before mutating
+  const snapPri   = cat.items.map((_, i) => ePri(cid, i));
+  const snapSco   = cat.items.map((_, i) => eSco(cid, i));
+  const snapNotes = cat.items.map((_, i) => eNot(cid, i));
+
+  // Remove item from data array
+  cat.items.splice(idx, 1);
+
+  // Rebuild per-row overrides with shifted indices
+  if (!S[cid]) S[cid] = {};
+  // Clear all row overrides for this cat, then re-write shifted ones
+  Object.keys(S[cid]).filter(k => k.startsWith('r')).forEach(k => delete S[cid][k]);
+
+  cat.items.forEach((item, i) => {
+    const origI = i < idx ? i : i + 1;   // map new index back to original
+    const pri   = snapPri[origI];
+    const sco   = snapSco[origI];
+    const notes = snapNotes[origI];
+    // Only store if differs from item default or has notes/score
+    if (pri !== item.priority || sco !== null || notes) {
+      S[cid][`r${i}`] = { priority: pri, score: sco, notes };
+    }
+    // Also update the item's default priority in the data array
+    item.priority = pri;
+    item.score    = sco;
+  });
+
+  saveS();
+  rebuildCategory(cid);
+  refreshMeta(cid);
+  renderSidebar();
+  renderDashboard();
+  
+  applyFilter();
+}
+
+/* Rebuild only one category card in the DOM (avoids full re-render) */
+function rebuildCategory(cid) {
+  const cat  = CATS.find(c => c.id === cid);
+  const card = document.getElementById(`card-${cid}`);
+  if (!card) return;
+  const wasCollapsed = document.getElementById(`body-${cid}`)?.classList.contains('body-collapsed');
+  card.outerHTML = buildCard(cat);   // replace node
+  if (wasCollapsed) {
+    document.getElementById(`body-${cid}`)?.classList.add('body-collapsed');
+    document.getElementById(`hdr-${cid}`)?.classList.add('hdr-collapsed');
+  }
+  applyFilter();
+}
+
+/* ================================================================ CALCS */
+function catAvg(cid, items) {
+  const sc = items.map((_,i)=>eSco(cid,i)).filter(s=>s!==null);
+  if(!sc.length) return null;
+  return sc.reduce((a,b)=>a+b,0)/sc.length;
+}
+function avgPill(avg) {
+  if(avg===null) return '<span style="font-size:12px;color:var(--mid-grey)">—</span>';
+  const s=Math.round(avg), c=SCORE_COLORS[s]||SCORE_COLORS[3];
+  return `<span class="cat-avg-pill" style="background:${c.bg};color:${c.color};">${avg.toFixed(1)}</span>`;
+}
+
+/* ================================================================ RENDER */
+function render() {
+  renderSidebar();
+  renderCards();
+  renderDashboard();
+  
+}
+
+/* --- SIDEBAR --- */
+function renderSidebar() {
+  document.getElementById('sidebar').innerHTML =
+    '<div class="sidebar-heading">Sections</div>' +
+    CATS.map(cat=>{
+      const sc = cat.items.filter((_,i)=>eSco(cat.id,i)!==null).length;
+      return `<a class="nav-item" id="nav-${cat.id}" href="#card-${cat.id}" onclick="navTo('${cat.id}');return false;">${cat.label}<span class="nav-badge">${sc}/${cat.items.length}</span></a>`;
+    }).join('');
+}
+
+/* --- CARDS --- */
+function renderCards() {
+  document.getElementById('cards-container').innerHTML = CATS.map(cat => buildCard(cat)).join('');
+}
+
+function buildCard(cat) {
+  const avg  = catAvg(cat.id, cat.items);
+  const priA = cat.items.filter((_,i)=>ePri(cat.id,i)==='A').length;
+  const sc   = cat.items.filter((_,i)=>eSco(cat.id,i)!==null).length;
+  const rows = cat.items.map((item,idx)=>buildRow(cat,item,idx)).join('');
+  return `
+<div class="category-card" id="card-${cat.id}">
+  <div class="category-header" id="hdr-${cat.id}" onclick="toggleCard('${cat.id}')">
+    <div class="category-icon">${cat.icon}</div>
+    <div class="category-title">${cat.label}</div>
+    <div class="category-meta" id="meta-${cat.id}">
+      ${priA>0?`<span style="font-size:11px;color:#b5960a;font-weight:700;">▲ ${priA}A</span>`:''}
+      ${avgPill(avg)}
+      <span style="font-size:11px;color:var(--mid-grey)">${sc}/${cat.items.length} scored</span>
+    </div>
+    <button class="btn-delete-section" title="Delete this section" onclick="event.stopPropagation();openDelSection('${cat.id}')">✕ Remove Section</button>
+    <span class="collapse-icon">▾</span>
+  </div>
+  <div class="cat-body" id="body-${cat.id}">
+    <table class="items-table">
+      <thead><tr>
+        <th class="th-ref">#</th>
+        <th>Capability / Item</th>
+        <th class="th-priority">Priority</th>
+        <th class="th-maturity">Maturity Score</th>
+        <th class="th-notes">Notes</th>
+        <th class="th-delete"></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <table class="items-table">
+      <tbody>
+        <tr class="add-item-row">
+          <td colspan="6">
+            <div class="add-item-form">
+              <input type="text" class="add-item-input" id="add-input-${cat.id}" placeholder="New capability item…" maxlength="80"
+                onkeydown="if(event.key==='Enter')addItem('${cat.id}')">
+              <button class="btn-add-item" onclick="addItem('${cat.id}')">+ Add Item</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>`;
+}
+
+function buildRow(cat, item, idx) {
+  const pri  = ePri(cat.id, idx);
+  const sco  = eSco(cat.id, idx);
+  const not  = eNot(cat.id, idx);
+  const pid  = `p-${cat.id}-${idx}`;
+
+  const priCtrl = `<div class="pri-seg">
+    <input type="radio" class="ra" name="${pid}" id="${pid}a" ${pri==='A'?'checked':''} onchange="onP('${cat.id}',${idx},'A')">
+    <label for="${pid}a">A</label>
+    <input type="radio" class="rb" name="${pid}" id="${pid}b" ${pri==='B'?'checked':''} onchange="onP('${cat.id}',${idx},'B')">
+    <label for="${pid}b">B</label>
+    <input type="radio" class="rc" name="${pid}" id="${pid}c" ${pri==='C'?'checked':''} onchange="onP('${cat.id}',${idx},'C')">
+    <label for="${pid}c">C</label>
+  </div>`;
+
+  const chips = buildChips(cat.id, idx, sco);
+
+  return `<tr class="item-row pri-${pri.toLowerCase()}" id="row-${cat.id}-${idx}" data-pri="${pri}" data-sco="${sco||''}">
+    <td class="td-ref">${idx + 1}</td>
+    <td class="td-name">${item.name}</td>
+    <td class="td-priority">${priCtrl}</td>
+    <td class="td-maturity">${chips}</td>
+    <td class="td-notes"><textarea class="notes-input" rows="1" placeholder="Add notes…" onchange="onN('${cat.id}',${idx},this.value)">${not}</textarea></td>
+    <td class="td-delete"><button class="btn-delete" title="Remove item" onclick="deleteItem('${cat.id}',${idx})">✕</button></td>
+  </tr>`;
+}
+
+function buildChips(cid, idx, sco) {
+  let h = '<div class="score-chips">';
+  for(let s=1;s<=5;s++){
+    const a = sco===s ? `sc-a${s}` : '';
+    h += `<button class="score-chip ${a}" title="${SCORE_LABELS[s]}" onclick="onS('${cid}',${idx},${s})">${s}</button>`;
+  }
+  h += `<button class="score-chip sc-clr" title="Clear" onclick="onS('${cid}',${idx},null)">✕</button>`;
+  return h + '</div>';
+}
+
+/* --- DASHBOARD --- */
+
+// Maturity score → dial colours (vivid fill, contrast text)
+const DIAL_COLORS = {
+  null: { ring: '#dde2ea', track: '#f0f2f5', text: '#8898aa' },
+  1:    { ring: '#e8251a', track: '#fde8e7', text: '#e8251a' },
+  2:    { ring: '#f4a0a0', track: '#fef2f2', text: '#c0392b' },
+  3:    { ring: '#f5b800', track: '#fdf8e6', text: '#a07800' },
+  4:    { ring: '#90d67a', track: '#eef8ea', text: '#2a7a1e' },
+  5:    { ring: '#27a842', track: '#e5f7ea', text: '#1a7030' },
+};
+
+function buildDial(avg, size) {
+  // size = diameter in px. Track + ring drawn as SVG circles.
+  const r = 34; // radius (within viewBox 90x90, centre 45,45)
+  const circ = 2 * Math.PI * r;  // ~213.6
+  const score = avg !== null ? Math.round(avg) : null;
+  const dc = DIAL_COLORS[score] || DIAL_COLORS[null];
+  // Fill fraction: 0 (score=1) to 1 (score=5)
+  const frac = avg !== null ? (avg - 1) / 4 : 0;
+  const dash = (frac * circ).toFixed(2);
+  const gap  = (circ - frac * circ).toFixed(2);
+  // Rotate so arc starts at top (−90°)
+  const scoreText = avg !== null ? avg.toFixed(1) : '—';
+
+  return `<div class="dial-wrap">
+    <svg viewBox="0 0 90 90" width="90" height="90" xmlns="http://www.w3.org/2000/svg">
+      <!-- Track -->
+      <circle cx="45" cy="45" r="${r}" fill="none"
+        stroke="${dc.track}" stroke-width="8"/>
+      <!-- Ring -->
+      <circle cx="45" cy="45" r="${r}" fill="none"
+        stroke="${dc.ring}" stroke-width="8"
+        stroke-linecap="round"
+        stroke-dasharray="${dash} ${gap}"
+        transform="rotate(-90 45 45)"
+        style="transition:stroke-dasharray .4s ease"/>
+    </svg>
+    <div class="dial-centre">
+      <span class="dial-score" style="color:${dc.text}">${scoreText}</span>
+      <span class="dial-score-label">Avg</span>
+    </div>
+  </div>`;
+}
+
+function renderDashboard() {
+  // --- KPI strip ---
+  let totA=0, totSc=0, totAll=0, sum=0;
+  CATS.forEach(cat=>cat.items.forEach((_,i)=>{
+    totAll++;
+    if(ePri(cat.id,i)==='A') totA++;
+    const s=eSco(cat.id,i);
+    if(s!==null){ totSc++; sum+=s; }
+  }));
+  const overallAvg = totSc>0 ? (sum/totSc) : null;
+  document.getElementById('kpi-avg').textContent     = overallAvg!==null ? overallAvg.toFixed(1) : '—';
+  document.getElementById('kpi-scored').textContent  = totSc;
+  document.getElementById('kpi-scored-sub').textContent = `of ${totAll} total`;
+  document.getElementById('kpi-a').textContent       = totA;
+  document.getElementById('kpi-cats').textContent    = CATS.length;
+
+  // Colour the overall avg KPI value
+  const avgEl = document.getElementById('kpi-avg');
+  if(overallAvg!==null){
+    const dc = DIAL_COLORS[Math.round(overallAvg)] || DIAL_COLORS[null];
+    avgEl.style.color = dc.text;
+  } else {
+    avgEl.style.color = 'var(--mid-grey)';
+  }
+
+  // --- Dial grid ---
+  document.getElementById('dial-grid').innerHTML = CATS.map(cat=>{
+    const avg  = catAvg(cat.id, cat.items);
+    const sc   = cat.items.filter((_,i)=>eSco(cat.id,i)!==null).length;
+    const tot  = cat.items.length;
+    const priA = cat.items.filter((_,i)=>ePri(cat.id,i)==='A').length;
+
+    const dial = buildDial(avg);
+    const scoredStr = sc > 0 ? `${sc} / ${tot}` : `0 / ${tot}`;
+    const priAStr   = priA > 0 ? priA : '—';
+    const priAClass = priA > 0 ? 'pri-a-val' : 'unscored';
+
+    return `<div class="dial-card" onclick="navTo('${cat.id}')" title="Jump to ${cat.label}">
+      <div class="dial-cat-name">${cat.label}</div>
+      ${dial}
+      <div class="dial-stats">
+        <div class="dial-stat">
+          <span class="dial-stat-label">Scored</span>
+          <span class="dial-stat-value${sc===0?' unscored':''}">${scoredStr}</span>
+        </div>
+        <div class="dial-stat">
+          <span class="dial-stat-label">Priority A</span>
+          <span class="dial-stat-value ${priAClass}">${priAStr}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+
+/* ================================================================ EVENT HANDLERS */
+function onP(cid, idx, val) {
+  setI(cid, idx, 'priority', val);
+  const row = document.getElementById(`row-${cid}-${idx}`);
+  if(row){ row.className=`item-row pri-${val.toLowerCase()}`; row.dataset.pri=val; }
+  refreshMeta(cid);
+  renderDashboard();
+  
+  applyFilter();
+}
+
+function onS(cid, idx, val) {
+  setI(cid, idx, 'score', val);
+  const row = document.getElementById(`row-${cid}-${idx}`);
+  if(row){
+    row.querySelector('.td-maturity').innerHTML = buildChips(cid, idx, val);
+    row.dataset.sco = val||'';
+  }
+  refreshMeta(cid);
+  renderSidebar();
+  renderDashboard();
+  
+  applyFilter();
+}
+
+function onN(cid, idx, val) { setI(cid, idx, 'notes', val); }
+
+function refreshMeta(cid) {
+  const cat  = CATS.find(c=>c.id===cid);
+  const avg  = catAvg(cid, cat.items);
+  const priA = cat.items.filter((_,i)=>ePri(cid,i)==='A').length;
+  const sc   = cat.items.filter((_,i)=>eSco(cid,i)!==null).length;
+  const el   = document.getElementById(`meta-${cid}`);
+  if(el) el.innerHTML =
+    (priA>0?`<span style="font-size:11px;color:#b5960a;font-weight:700;">▲ ${priA}A</span>`:'')+
+    avgPill(avg)+
+    `<span style="font-size:11px;color:var(--mid-grey)">${sc}/${cat.items.length} scored</span>`;
+}
+
+/* ================================================================ COLLAPSE */
+function toggleCard(cid) {
+  document.getElementById(`body-${cid}`).classList.toggle('body-collapsed');
+  document.getElementById(`hdr-${cid}`).classList.toggle('hdr-collapsed');
+}
+function toggleAll(open) {
+  CATS.forEach(cat=>{
+    const b = document.getElementById(`body-${cat.id}`);
+    const h = document.getElementById(`hdr-${cat.id}`);
+    if(open){ b.classList.remove('body-collapsed'); h.classList.remove('hdr-collapsed'); }
+    else    { b.classList.add('body-collapsed');    h.classList.add('hdr-collapsed');    }
+  });
+}
+
+/* ================================================================ FILTER */
+let activeFilter = 'all';
+let priorityAActive = false;
+
+function setFilter(f) {
+  // If Priority A mode is on, clicking another filter turns it off first
+  if (priorityAActive) {
+    priorityAActive = false;
+    document.getElementById('btn-priority-a').classList.remove('active');
+    document.getElementById('pri-a-banner').style.display = 'none';
+  }
+  activeFilter = f;
+  ['all','low','unscored'].forEach(id => {
+    document.getElementById(`filter-${id}`).classList.toggle('active', id === f);
+  });
+  applyFilter();
+}
+
+function togglePriorityA() {
+  priorityAActive = !priorityAActive;
+  const btn    = document.getElementById('btn-priority-a');
+  const banner = document.getElementById('pri-a-banner');
+  if (priorityAActive) {
+    btn.classList.add('active');
+    banner.style.display = 'flex';
+    // Deactivate any other filter
+    activeFilter = 'all';
+    ['all','low','unscored'].forEach(id => {
+      document.getElementById(`filter-${id}`).classList.toggle('active', id === 'all');
+    });
+  } else {
+    btn.classList.remove('active');
+    banner.style.display = 'none';
+  }
+  applyFilter();
+}
+
+function applyFilter() {
+  const f = priorityAActive ? 'a' : activeFilter;
+
+  CATS.forEach(cat => {
+    let visibleCount = 0;
+    cat.items.forEach((_, i) => {
+      const row = document.getElementById(`row-${cat.id}-${i}`);
+      if (!row) return;
+      const pri = ePri(cat.id, i), sco = eSco(cat.id, i);
+      let hide = false;
+      if (f === 'a'        && pri !== 'A')           hide = true;
+      if (f === 'low'      && (sco === null || sco > 2)) hide = true;
+      if (f === 'unscored' && sco !== null)          hide = true;
+      row.classList.toggle('row-hidden', hide);
+      if (!hide) visibleCount++;
+    });
+
+    // Handle empty-category state when Priority A filter is active
+    const noMsg = document.getElementById(`no-pri-a-${cat.id}`);
+    const catBody = document.getElementById(`body-${cat.id}`);
+    if (f === 'a') {
+      if (visibleCount === 0 && catBody) {
+        // Show the no-items message, collapse body only if all hidden
+        if (noMsg) noMsg.style.display = 'block';
+        // Hide entire card for cleaner look
+        const card = document.getElementById(`card-${cat.id}`);
+        if (card) card.style.display = 'none';
+      } else {
+        if (noMsg) noMsg.style.display = 'none';
+        const card = document.getElementById(`card-${cat.id}`);
+        if (card) card.style.display = '';
+        // Make sure body is expanded so rows are visible
+        if (catBody && catBody.classList.contains('body-collapsed')) {
+          catBody.classList.remove('body-collapsed');
+          document.getElementById(`hdr-${cat.id}`)?.classList.remove('hdr-collapsed');
+        }
+      }
+    } else {
+      // Restore all hidden cards
+      const card = document.getElementById(`card-${cat.id}`);
+      if (card) card.style.display = '';
+      if (noMsg) noMsg.style.display = 'none';
+    }
+  });
+}
+
+// ESC key dismisses Priority A filter
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && priorityAActive) togglePriorityA();
+});
+
+
+/* ================================================================ ADD SECTION */
+function openAddSection() {
+  document.getElementById('section-name-input').value = '';
+  document.getElementById('section-icon-input').value = '';
+  document.getElementById('section-name-error').classList.remove('visible');
+  document.getElementById('modal-section').classList.add('open');
+  setTimeout(()=>document.getElementById('section-name-input').focus(), 80);
+}
+function closeAddSection() {
+  document.getElementById('modal-section').classList.remove('open');
+}
+function doAddSection() {
+  const name = document.getElementById('section-name-input').value.trim();
+  const icon = document.getElementById('section-icon-input').value.trim() || '📋';
+  if (!name) {
+    document.getElementById('section-name-error').classList.add('visible');
+    document.getElementById('section-name-input').focus();
+    return;
+  }
+  const id = 'cat-' + name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') + '-' + Date.now();
+  const newCat = {
+    id, label: name, icon,
+    items: [{ priority:'C', name:'New Item', score:null }],
+    _origItems: []
+  };
+  newCat._origItems = newCat.items.map(x=>({...x}));
+  CATS.push(newCat);
+  saveS();
+  closeAddSection();
+  renderCards();
+  renderSidebar();
+  renderDashboard();
+  
+  setTimeout(()=>{
+    const el = document.getElementById(`card-${id}`);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 100);
+}
+
+/* ================================================================ DELETE SECTION */
+let _pendingDelCid = null;
+function openDelSection(cid) {
+  _pendingDelCid = cid;
+  const cat = CATS.find(c=>c.id===cid);
+  document.getElementById('del-section-title').textContent = `Delete "${cat.label}"`;
+  document.getElementById('del-section-msg').textContent =
+    `This will permanently remove the "${cat.label}" section and all ${cat.items.length} item${cat.items.length!==1?'s':''} within it. This cannot be undone.`;
+  document.getElementById('modal-del-section').classList.add('open');
+}
+function closeDelSection() {
+  document.getElementById('modal-del-section').classList.remove('open');
+  _pendingDelCid = null;
+}
+function confirmDelSection() {
+  if (!_pendingDelCid) return;
+  const idx = CATS.findIndex(c=>c.id===_pendingDelCid);
+  if (idx > -1) {
+    if (S[_pendingDelCid]) delete S[_pendingDelCid];
+    CATS.splice(idx, 1);
+    saveS();
+  }
+  closeDelSection();
+  renderCards();
+  renderSidebar();
+  renderDashboard();
+  
+}
+
+/* ================================================================ NAV */
+function navTo(cid) {
+  const el = document.getElementById(`card-${cid}`);
+  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  const body = document.getElementById(`body-${cid}`);
+  const hdr  = document.getElementById(`hdr-${cid}`);
+  if(body && body.classList.contains('body-collapsed')) { body.classList.remove('body-collapsed'); hdr.classList.remove('hdr-collapsed'); }
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const ni = document.getElementById(`nav-${cid}`);
+  if(ni) ni.classList.add('active');
+}
+
+/* ================================================================ RESET */
+function openReset()  { document.getElementById('modal').classList.add('open'); }
+function closeReset() { document.getElementById('modal').classList.remove('open'); }
+function doReset()    {
+  localStorage.removeItem(SK);
+  S = {};
+  // Restore CATS to original sections, but clear ALL user input:
+  // priority → 'C', score → null, notes → ''
+  CATS.length = 0;
+  _origCats.forEach(cat => {
+    const cleanItems = cat._origItems.map(x => ({
+      name:     x.name,
+      priority: 'C',
+      score:    null,
+    }));
+    CATS.push({ ...cat, items: cleanItems, _origItems: cat._origItems });
+  });
+  closeReset();
+  render();
+}
+
+/* ================================================================ INIT */
+// Snapshot original categories and items so Reset can fully restore them
+CATS.forEach(cat => { cat._origItems = cat.items.map(x=>({...x})); });
+const _origCats = CATS.map(cat => ({ ...cat }));
+loadS();
+render();
+</script>
+</body>
+</html>
