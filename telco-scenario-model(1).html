@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Telco Capex, Payback &amp; IRR Scenario Model</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { background: #F5F2EA; font-family: Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+
+    input[type=range] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 4px; border-radius: 2px;
+      outline: none; cursor: pointer; background: #D5CFC0;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #85744F; border: 2px solid #fff;
+      box-shadow: 0 1px 4px rgba(133,116,79,0.45); cursor: pointer;
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #85744F; border: 2px solid #fff; cursor: pointer;
+    }
+    input[type=range]::-moz-range-progress { background: #85744F; height: 4px; border-radius: 2px; }
+
+    .reset-btn {
+      background: none; border: 1.5px solid #85744F; color: #85744F;
+      padding: 7px 18px; border-radius: 6px; cursor: pointer;
+      font-family: Helvetica, Arial, sans-serif; font-size: 11px;
+      font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      transition: background 0.15s, color 0.15s;
+    }
+    .reset-btn:hover { background: #85744F; color: #fff; }
+
+    .layout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
+    .card-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    .section-divider {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: #85744F;
+      border-top: 1px solid #F0EDE5; padding-top: 16px; margin-top: 6px; margin-bottom: 14px;
+    }
+
+    @media (max-width: 800px) { .layout-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 480px) { .card-grid-2 { grid-template-columns: 1fr; } }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #F0EDE5; }
+    ::-webkit-scrollbar-thumb { background: #C5BB9F; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+
+    const GST_RATE        = 0.10;
+    const ARPU_ESCALATION = 0.035;
+
+    // ── IRR ──────────────────────────────────────────────────────────────────
+    function calcIRR(flows, guess = 0.1) {
+      let rate = guess;
+      for (let i = 0; i < 1000; i++) {
+        let npv = 0, dnpv = 0;
+        for (let t = 0; t < flows.length; t++) {
+          const d = Math.pow(1 + rate, t);
+          npv  += flows[t] / d;
+          dnpv -= (t * flows[t]) / Math.pow(1 + rate, t + 1);
+        }
+        if (dnpv === 0) return null;
+        const next = rate - npv / dnpv;
+        if (Math.abs(next - rate) < 1e-7) return next;
+        rate = next;
+      }
+      return null;
+    }
+
+    // ── Formatters ───────────────────────────────────────────────────────────
+    const fmt = {
+      currency:  (n) => (!n || !isFinite(n)) ? '$0' : '$' + Math.round(n).toLocaleString(),
+      currency2: (n) => !isFinite(n) ? '$0.00' : '$' + n.toFixed(2),
+      pct:       (n) => `${Math.round(n * 100)}%`,
+      num:       (n) => Math.round(n).toLocaleString(),
+      months:    (n) => (!n || !isFinite(n)) ? '—' : `${n.toFixed(1)} mo`,
+      irr:       (n) => (n === null || !isFinite(n)) ? 'N/A' : `${(n * 100).toFixed(1)}%`,
+    };
+
+    // ── Slider ───────────────────────────────────────────────────────────────
+    function Slider({ label, value, low, high, onChange, display, note }) {
+      const pct = high > low ? ((value - low) / (high - low)) * 100 : 0;
+      const trackBg = `linear-gradient(to right, #85744F ${pct}%, #D5CFC0 ${pct}%)`;
+      return (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: note ? 2 : 5 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', color: '#2D2D2D', textTransform: 'uppercase' }}>
+              {label}
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#85744F', minWidth: 60, textAlign: 'right' }}>
+              {display(value)}
+            </span>
+          </div>
+          {note && <div style={{ fontSize: 10, color: '#85744F', marginBottom: 5, fontStyle: 'italic', opacity: 0.85 }}>{note}</div>}
+          <input type="range" min={low} max={high} step={(high - low) / 400}
+            value={value} onChange={(e) => onChange(parseFloat(e.target.value))}
+            style={{ background: trackBg }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
+            <span style={{ fontSize: 10, color: '#919191' }}>{display(low)}</span>
+            <span style={{ fontSize: 10, color: '#919191' }}>{display(high)}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Card ─────────────────────────────────────────────────────────────────
+    function Card({ label, value, sub, highlight, status }) {
+      const valueColor = status === 'approved' ? '#16a34a' : status === 'rejected' ? '#dc2626' : highlight ? '#fff' : '#2D2D2D';
+      return (
+        <div style={{
+          background: highlight ? 'linear-gradient(135deg, #85744F 0%, #6b5c3e 100%)' : '#fff',
+          border: highlight ? 'none' : '1px solid #E8E4D9', borderRadius: 12, padding: '18px 20px',
+          boxShadow: highlight ? '0 8px 28px rgba(133,116,79,0.28)' : '0 2px 10px rgba(0,0,0,0.05)',
+          position: 'relative', overflow: 'hidden',
+        }}>
+          {highlight && <div style={{ position: 'absolute', top: 0, right: 0, width: 72, height: 72, background: 'rgba(255,255,255,0.07)', borderRadius: '0 12px 0 72px' }} />}
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: highlight ? 'rgba(255,255,255,0.6)' : '#919191', marginBottom: 7 }}>{label}</div>
+          <div style={{ fontSize: highlight ? 26 : 22, fontWeight: 700, color: valueColor, letterSpacing: '-0.02em', lineHeight: 1 }}>{value}</div>
+          {sub && <div style={{ fontSize: 11, color: highlight ? 'rgba(255,255,255,0.5)' : '#919191', marginTop: 5 }}>{sub}</div>}
+        </div>
+      );
+    }
+
+    function ScenarioTag({ label }) {
+      return (
+        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', background: '#DDDABD', color: '#85744F', padding: '4px 12px', borderRadius: 20 }}>
+          {label}
+        </span>
+      );
+    }
+
+    // ── IRR Assumptions Panel ─────────────────────────────────────────────────
+    function IRRAssumptions({ v, calc }) {
+      const rows = [
+        ['Revenue basis',         'ARPU ex-GST — 10% GST removed from slider input'],
+        ['Year 1 ARPU (ex-GST)',  `${fmt.currency2(calc.arpuExGst)} / subscriber / month`],
+        ['ARPU escalation',       `${(ARPU_ESCALATION * 100).toFixed(1)}% per annum applied from Year 2`],
+        ['Active subscribers',    fmt.num(calc.activeSubscribers)],
+        ['Cost of sale (monthly)',`Backhaul $${v.backhaul}/mo + Internet $${v.costPerSubInternet.toFixed(2)}/sub + Support $${v.costPerSubSupport.toFixed(2)}/sub + RBS $${v.costPerSubRBS.toFixed(2)}/sub`],
+        ['Annual cost of sale',   fmt.currency(calc.annualCostOfSale)],
+        ['Projection period',     '5 years'],
+        ['Year 0 cash flow',      `(${fmt.currency(calc.totalCapex)})  —  total capex outlay`],
+        ['Years 1–5 cash flows',  'Annual net revenue (ex cost of sale) with 3.5% p.a. ARPU escalation on revenue only'],
+        ['IRR method',            'Newton-Raphson iteration on 6-period discounted cash flow series'],
+      ];
+      return (
+        <div style={{ background: '#FAFAF7', border: '1px solid #E8E4D9', borderRadius: 10, padding: '16px 18px' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#85744F', marginBottom: 12 }}>
+            IRR Assumptions
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <tbody>
+              {rows.map(([k, val], i) => (
+                <tr key={i} style={{ borderBottom: i < rows.length - 1 ? '1px solid #F0EDE5' : 'none' }}>
+                  <td style={{ fontSize: 11, color: '#919191', padding: '6px 10px 6px 0', fontWeight: 700, whiteSpace: 'nowrap', verticalAlign: 'top', width: '38%' }}>{k}</td>
+                  <td style={{ fontSize: 11, color: '#2D2D2D', padding: '6px 0', verticalAlign: 'top' }}>{val}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    // ── Defaults ─────────────────────────────────────────────────────────────
+    const DEFAULTS = {
+      dwellings:            200,
+      labourRate:            80,
+      installHours:           3,
+      endUnitMaterials:     200,
+      centralEquipment:    7000,   // $5k–$15k, default $7k
+      takeUpRate:          0.75,
+      arpu:                  50,   // inc. GST
+      // Costs of sale
+      backhaul:             600,   // $/month flat, whole operation
+      costPerSubInternet:  2.50,   // $/sub/month
+      costPerSubSupport:   2.00,   // $/sub/month
+      costPerSubRBS:       2.17,   // $/sub/month
+    };
+
+    // ── App ──────────────────────────────────────────────────────────────────
+    function App() {
+      const [v, setV] = useState(DEFAULTS);
+      const set = (key) => (val) => setV((prev) => ({ ...prev, [key]: val }));
+
+      const calc = useMemo(() => {
+        const arpuExGst = v.arpu / (1 + GST_RATE);
+
+        // Capex
+        const centralEquipPerUnit = v.dwellings > 0 ? v.centralEquipment / v.dwellings : 0;
+        const capexPerUnit        = (v.labourRate * v.installHours) + v.endUnitMaterials + centralEquipPerUnit;
+        const totalCapex          = capexPerUnit * v.dwellings;
+        const activeSubscribers   = v.dwellings * v.takeUpRate;
+
+        // Monthly cost of sale
+        const monthlyCostOfSale = v.backhaul + activeSubscribers * (v.costPerSubInternet + v.costPerSubSupport + v.costPerSubRBS);
+        const annualCostOfSale  = monthlyCostOfSale * 12;
+
+        // Monthly net revenue (ex-GST ARPU minus cost of sale)
+        const monthlyRevenue    = activeSubscribers * arpuExGst;
+        const monthlyNet        = monthlyRevenue - monthlyCostOfSale;
+
+        // Payback: Total Capex ÷ monthly net (Year 1, no escalation)
+        const paybackMonths = monthlyNet > 0 ? totalCapex / monthlyNet : 0;
+        const approved      = paybackMonths > 0 && paybackMonths <= 30.0;
+
+        // IRR: 5-year cash flows with ARPU escalation on revenue; cost of sale stays flat
+        const cashFlows = [-totalCapex];
+        for (let t = 1; t <= 5; t++) {
+          const escalatedArpu    = arpuExGst * Math.pow(1 + ARPU_ESCALATION, t - 1);
+          const annualRevenue    = activeSubscribers * escalatedArpu * 12;
+          const annualCos        = annualCostOfSale;   // flat each year
+          cashFlows.push(annualRevenue - annualCos);
+        }
+
+        let irr = null;
+        if (totalCapex > 0 && cashFlows.slice(1).some(cf => cf !== 0)) {
+          try { irr = calcIRR(cashFlows); } catch(_) {}
+        }
+
+        return { arpuExGst, capexPerUnit, totalCapex, activeSubscribers, monthlyCostOfSale, annualCostOfSale, monthlyNet, paybackMonths, approved, irr };
+      }, [v]);
+
+      const scenarioLabel = useMemo(() => {
+        const pairs = [
+          [v.dwellings, 0, 400], [v.labourRate, 60, 100], [v.installHours, 1, 8],
+          [v.endUnitMaterials, 100, 400], [v.centralEquipment, 5000, 15000],
+          [v.takeUpRate, 0.60, 0.80], [v.arpu, 40, 80],
+          [v.backhaul, 400, 800], [v.costPerSubInternet, 1, 5],
+          [v.costPerSubSupport, 1, 4], [v.costPerSubRBS, 1, 4],
+        ];
+        const avg = pairs.reduce((s, [val, lo, hi]) => s + (val - lo) / (hi - lo), 0) / pairs.length;
+        return avg < 0.35 ? 'Low Scenario' : avg > 0.65 ? 'High Scenario' : 'Base Scenario';
+      }, [v]);
+
+      return (
+        <div style={{ minHeight: '100vh', background: '#F5F2EA', paddingBottom: 60 }}>
+
+          {/* Header */}
+          <div style={{ background: '#2D2D2D', padding: '32px 40px 26px', borderBottom: '3px solid #85744F' }}>
+            <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+                    <div style={{ width: 4, height: 30, background: '#85744F', borderRadius: 2, flexShrink: 0 }} />
+                    <h1 style={{ fontSize: 24, fontWeight: 700, color: '#F5F2EA', letterSpacing: '0.01em', lineHeight: 1.2 }}>
+                      Telco Capex, Payback &amp; IRR<br />Scenario Model
+                    </h1>
+                  </div>
+                  <p style={{ fontSize: 11, color: '#919191', letterSpacing: '0.04em', marginLeft: 16 }}>
+                    Interactive model for evaluating telco network deployment economics in MDU projects
+                  </p>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
+                  <img src="data:image/png;base64,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" alt="FibreNet" style={{ height: 38, width: 'auto', filter: 'brightness(0) invert(1)', opacity: 0.85 }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <ScenarioTag label={scenarioLabel} />
+                    <button className="reset-btn" onClick={() => setV(DEFAULTS)}>↺ Reset to Base</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
+
+            {/* Summary Bar */}
+            <div style={{ background: '#fff', border: '1px solid #E8E4D9', borderTop: 'none', borderRadius: '0 0 12px 12px', padding: '13px 24px', marginBottom: 28, display: 'flex', flexWrap: 'wrap', gap: '12px 28px', boxShadow: '0 4px 14px rgba(0,0,0,0.05)' }}>
+              {[
+                ['Dwellings',          fmt.num(v.dwellings)],
+                ['Take-up',            fmt.pct(v.takeUpRate)],
+                ['Active Subs',        fmt.num(calc.activeSubscribers)],
+                ['ARPU (inc. GST)',    `$${v.arpu}/mo`],
+                ['ARPU (ex. GST)',     `${fmt.currency2(calc.arpuExGst)}/mo`],
+                ['Monthly COS',        fmt.currency(calc.monthlyCostOfSale)],
+                ['Total Capex',        fmt.currency(calc.totalCapex)],
+              ].map(([k, val]) => (
+                <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#919191' }}>{k}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#2D2D2D' }}>{val}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Two-column layout */}
+            <div className="layout-grid">
+
+              {/* Left: Inputs */}
+              <div style={{ background: '#fff', borderRadius: 14, padding: '28px 28px 16px', border: '1px solid #E8E4D9', boxShadow: '0 2px 14px rgba(0,0,0,0.05)' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#85744F', marginBottom: 22, paddingBottom: 12, borderBottom: '1px solid #F0EDE5' }}>
+                  Scenario Inputs
+                </div>
+
+                {/* ── Capex Inputs ── */}
+                <div className="section-divider">Capex &amp; Deployment</div>
+
+                <Slider label="Number of Dwellings"
+                  value={v.dwellings} low={0} high={400}
+                  onChange={set('dwellings')} display={fmt.num} />
+
+                <Slider label="Labour Rate ($/hr)"
+                  value={v.labourRate} low={60} high={100}
+                  onChange={set('labourRate')} display={(n) => `$${Math.round(n)}`} />
+
+                <Slider label="Install Hours per Unit"
+                  value={v.installHours} low={1} high={8}
+                  onChange={set('installHours')} display={(n) => `${n.toFixed(1)}h`} />
+
+                <Slider label="End-Unit Materials ($)"
+                  value={v.endUnitMaterials} low={100} high={400}
+                  onChange={set('endUnitMaterials')} display={(n) => `$${Math.round(n)}`} />
+
+                <Slider label="Central Equipment ($)"
+                  value={v.centralEquipment} low={5000} high={15000}
+                  onChange={set('centralEquipment')} display={(n) => `$${Math.round(n/1000).toFixed(0)}k`} />
+
+                <Slider label="Take-up Rate"
+                  value={v.takeUpRate} low={0.60} high={0.80}
+                  onChange={set('takeUpRate')} display={(n) => `${Math.round(n*100)}%`} />
+
+                {/* ── Revenue Inputs ── */}
+                <div className="section-divider">Revenue</div>
+
+                <Slider label="ARPU ($/month inc. GST)"
+                  value={v.arpu} low={40} high={80}
+                  onChange={set('arpu')} display={(n) => `$${Math.round(n)}`}
+                  note={`Ex-GST: ${fmt.currency2(v.arpu / 1.10)}/mo — used in all calculations`} />
+
+                {/* ── Costs of Sale ── */}
+                <div className="section-divider">Costs of Sale</div>
+
+                <Slider label="Backhaul ($/month, whole operation)"
+                  value={v.backhaul} low={400} high={800}
+                  onChange={set('backhaul')} display={(n) => `$${Math.round(n)}`} />
+
+                <Slider label="Internet Cost ($/sub/month)"
+                  value={v.costPerSubInternet} low={1} high={5}
+                  onChange={set('costPerSubInternet')} display={(n) => `$${n.toFixed(2)}`} />
+
+                <Slider label="Support Cost ($/sub/month)"
+                  value={v.costPerSubSupport} low={1} high={4}
+                  onChange={set('costPerSubSupport')} display={(n) => `$${n.toFixed(2)}`} />
+
+                <Slider label="RBS Levy ($/sub/month)"
+                  value={v.costPerSubRBS} low={1} high={4}
+                  onChange={set('costPerSubRBS')} display={(n) => `$${n.toFixed(2)}`} />
+              </div>
+
+              {/* Right: Outputs */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#85744F' }}>
+                  Scenario Outputs
+                </div>
+
+                {/* Capex row */}
+                <div className="card-grid-2">
+                  <Card label="Capex per Unit" value={fmt.currency(calc.capexPerUnit)} sub="Labour + materials + central equip" highlight />
+                  <Card label="Total Capex"    value={fmt.currency(calc.totalCapex)}   sub="Deployed across all dwellings" />
+                </div>
+
+                {/* Monthly economics row */}
+                <div className="card-grid-2">
+                  <Card label="Monthly Revenue ex-GST" value={fmt.currency(calc.activeSubscribers > 0 ? calc.activeSubscribers * calc.arpuExGst : 0)} sub="Active subs × ARPU ex-GST" />
+                  <Card label="Monthly Cost of Sale"   value={fmt.currency(calc.monthlyCostOfSale)} sub="Backhaul + per-sub costs" />
+                </div>
+
+                {/* Payback row */}
+                <div className="card-grid-2">
+                  <Card label="Payback Period"
+                    value={fmt.months(calc.paybackMonths)}
+                    sub="Total capex ÷ monthly net revenue" />
+                  <Card label="Payback Status"
+                    value={calc.paybackMonths === 0 ? '—' : calc.approved ? 'Approved' : 'Not Approved'}
+                    status={calc.paybackMonths === 0 ? null : calc.approved ? 'approved' : 'rejected'}
+                    sub={calc.paybackMonths === 0 ? '' : calc.approved ? '≤ 30 months' : '> 30 months'} />
+                </div>
+
+                {/* IRR row */}
+                <div className="card-grid-2">
+                  <Card label="5-Year Project IRR" value={fmt.irr(calc.irr)} sub="Ex-GST, 3.5% p.a. ARPU escalation" />
+                  <Card label="Monthly Net Revenue" value={fmt.currency(calc.monthlyNet)} sub="After all costs of sale" />
+                </div>
+
+                {/* IRR Assumptions */}
+                <IRRAssumptions v={v} calc={calc} />
+
+                {/* Model Notes */}
+                <div style={{ background: '#FAFAF7', border: '1px solid #E8E4D9', borderRadius: 10, padding: '16px 18px' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#919191', marginBottom: 8 }}>
+                    Model Notes
+                  </div>
+                  {[
+                    'Capex per unit = (Labour Rate × Install Hours) + End-Unit Materials + (Central Equipment ÷ Dwellings).',
+                    'Total capex is deployed across all dwellings regardless of take-up rate.',
+                    'ARPU is entered inclusive of GST. All revenue calculations use ex-GST ARPU (ARPU ÷ 1.10).',
+                    'Active Subscribers = Dwellings × Take-up Rate.',
+                    'Costs of Sale (monthly): Backhaul is a flat monthly fee for the whole operation. Internet, Support and RBS Levy are per active subscriber per month.',
+                    'Monthly Cost of Sale = Backhaul + (Active Subs × (Internet + Support + RBS Levy)).',
+                    'Payback Period = Total Capex ÷ Monthly Net Revenue, where Monthly Net Revenue = (Active Subs × ARPU ex-GST) − Monthly Cost of Sale.',
+                    'IRR cash flows: Year 0 = −Total Capex. Years 1–5 = Annual Revenue ex-GST (escalated 3.5% p.a. from Year 2) minus Annual Cost of Sale (flat).',
+                    'IRR is a 5-year discounted cash flow return estimate solved via Newton-Raphson iteration.',
+                  ].map((note, i) => (
+                    <div key={i} style={{ fontSize: 11, color: '#919191', lineHeight: 1.65, display: 'flex', gap: 7, marginBottom: 2 }}>
+                      <span style={{ color: '#C5BB9F', flexShrink: 0 }}>—</span>
+                      <span>{note}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

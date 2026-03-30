@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple3 Plan — Capital C Consulting</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --teal:#0F7370;--teal-light:#1a9490;--teal-dark:#0a5350;
+    --teal-bg:#e8f5f4;--teal-border:#9dd0ce;
+    --black:#111;--text:#1a1a1a;--muted:#6b7280;
+    --bluegrey:#BFCFD1;--softgrey:#B8B8B8;
+    --bg:#f8fafb;--white:#ffffff;
+    --card-shadow:0 1px 3px rgba(0,0,0,0.07);
+    --radius:10px;--radius-lg:14px;
+  }
+  body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6}
+  
+  /* LAYOUT */
+  .app{display:flex;min-height:100vh}
+  .sidebar{width:230px;min-width:230px;background:var(--black);color:#fff;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:100;display:flex;flex-direction:column}
+  .main{margin-left:230px;flex:1;min-height:100vh}
+  
+  /* SIDEBAR */
+  .sidebar-header{padding:24px 20px 16px;border-bottom:1px solid rgba(255,255,255,0.08)}
+  .sidebar-logo{font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--teal-border);margin-bottom:4px}
+  .sidebar-brand{font-size:17px;font-weight:600;color:#fff}
+  .nav-section{padding:16px 0 8px}
+  .nav-label{font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.35);padding:0 20px;margin-bottom:6px}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;color:rgba(255,255,255,0.65);font-size:13.5px;transition:all 0.15s;border-left:3px solid transparent}
+  .nav-item:hover{color:#fff;background:rgba(255,255,255,0.06)}
+  .nav-item.active{color:#fff;background:rgba(15,115,112,0.25);border-left-color:var(--teal)}
+  .nav-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.2);flex-shrink:0}
+  .nav-item.active .nav-dot{background:var(--teal)}
+  .nav-progress{margin:0 20px 4px;height:3px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden}
+  .nav-progress-fill{height:100%;background:var(--teal);transition:width 0.3s}
+  .nav-progress-label{font-size:10px;color:rgba(255,255,255,0.4);margin:0 20px 12px}
+  .sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid rgba(255,255,255,0.08)}
+  .save-indicator{font-size:11px;color:rgba(255,255,255,0.4);display:flex;align-items:center;gap:6px}
+  .save-dot{width:6px;height:6px;border-radius:50%;background:#4ade80}
+  
+  /* SECTIONS */
+  .section{display:none;padding:40px 44px;max-width:900px}
+  .section.active{display:block}
+  .section-hero{margin-bottom:36px}
+  .section-tag{font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);margin-bottom:8px}
+  .section-title{font-size:28px;font-weight:600;color:var(--black);margin-bottom:10px;letter-spacing:-0.3px}
+  .section-subtitle{font-size:15px;color:var(--muted);max-width:560px;line-height:1.65}
+  
+  /* TOPIC GROUPS */
+  .topic-group{margin-bottom:36px}
+  .topic-heading{font-size:13px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--teal);margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--teal-bg)}
+  
+  /* QUESTION CARD */
+  .q-card{background:var(--white);border:1px solid #e5eaeb;border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;box-shadow:var(--card-shadow)}
+  .q-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+  .q-number{background:var(--teal-bg);color:var(--teal-dark);font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;margin-top:2px;flex-shrink:0}
+  .q-text{font-size:15px;font-weight:500;color:var(--black);flex:1;line-height:1.5}
+  .q-body{display:flex;gap:16px}
+  .q-answers{flex:1}
+  .q-tips-toggle{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--teal);cursor:pointer;user-select:none;margin-bottom:10px;font-weight:500}
+  .q-tips-toggle:hover{opacity:0.8}
+  .q-tips{background:var(--teal-bg);border:1px solid var(--teal-border);border-radius:8px;padding:14px;margin-bottom:14px;display:none}
+  .q-tips.open{display:block}
+  .q-tips-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--teal-dark);margin-bottom:8px}
+  .q-tips ul{list-style:none;padding:0}
+  .q-tips ul li{font-size:13px;color:var(--teal-dark);padding:3px 0;display:flex;align-items:flex-start;gap:6px}
+  .q-tips ul li::before{content:"•";color:var(--teal);font-weight:700;margin-top:1px}
+  
+  /* ANSWER ROWS */
+  .answer-row{display:grid;grid-template-columns:1fr;gap:8px;align-items:center;margin-bottom:8px}
+  .answer-row input[type=text]{background:var(--bg);border:1px solid #e0e5e6;border-radius:7px;padding:9px 12px;font-size:14px;font-family:inherit;color:var(--text);transition:border-color 0.15s;width:100%}
+  .answer-row input[type=text]:focus{outline:none;border-color:var(--teal);background:#fff}
+  .answer-row input[type=text]::placeholder{color:#aab}
+  .row-label{font-size:11px;color:var(--muted);font-weight:500;text-align:center}
+  
+  /* PRIORITY SELECT */
+  .priority-select{width:100%;border:1px solid #e0e5e6;border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text);cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:calc(100% - 8px) center}
+  .priority-select:focus{outline:none;border-color:var(--teal)}
+  .priority-select.high{border-color:#ef4444;color:#b91c1c;background-color:#fef2f2}
+  .priority-select.medium{border-color:#f59e0b;color:#92400e;background-color:#fffbeb}
+  .priority-select.low{border-color:#6b7280;color:#374151;background-color:var(--bg)}
+  
+  /* WHO INPUT */
+  .who-input{width:100%;border:1px solid #e0e5e6;border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text);text-align:center;text-transform:uppercase;letter-spacing:0.05em}
+  .who-input:focus{outline:none;border-color:var(--teal)}
+  
+  /* STATUS SELECT */
+  .status-select{width:100%;border:1px solid #e0e5e6;border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;cursor:pointer;font-weight:500;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:calc(100% - 8px) center}
+  .status-select:focus{outline:none}
+  .status-select.todo{background-color:#ffffff;border-color:#d1d5db;color:#374151}
+  .status-select.doing{background-color:#fef9c3;border-color:#facc15;color:#713f12}
+  .status-select.done{background-color:#dcfce7;border-color:#4ade80;color:#14532d}
+  
+  /* ANSWER COLUMN HEADERS */
+  .answer-col-headers{display:grid;grid-template-columns:1fr 60px;gap:8px;margin-bottom:4px}
+  .col-hdr{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted)}
+  
+  /* INTRO PAGE */
+  .intro-hero{background:linear-gradient(135deg,var(--black) 0%,#1a2b2b 100%);border-radius:16px;padding:44px 48px;color:#fff;margin-bottom:36px}
+  .intro-hero h1{font-size:34px;font-weight:700;margin-bottom:12px;letter-spacing:-0.5px}
+  .intro-hero p{font-size:16px;color:rgba(255,255,255,0.72);max-width:500px;line-height:1.7}
+  .intro-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:36px}
+  .intro-card{background:var(--white);border:1px solid #e5eaeb;border-radius:var(--radius-lg);padding:24px;box-shadow:var(--card-shadow)}
+  .intro-card h3{font-size:15px;font-weight:600;color:var(--black);margin-bottom:8px}
+  .intro-card p{font-size:13.5px;color:var(--muted);line-height:1.6}
+  .intro-num{width:32px;height:32px;border-radius:8px;background:var(--teal-bg);color:var(--teal-dark);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+  .profile-form{background:var(--white);border:1px solid #e5eaeb;border-radius:var(--radius-lg);padding:28px;box-shadow:var(--card-shadow)}
+  .profile-form h2{font-size:17px;font-weight:600;color:var(--black);margin-bottom:20px}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .form-field{display:flex;flex-direction:column;gap:6px}
+  .form-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted)}
+  .form-input{border:1px solid #e0e5e6;border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;color:var(--text);background:var(--bg);transition:border-color 0.15s}
+  .form-input:focus{outline:none;border-color:var(--teal);background:#fff}
+  .start-btn{margin-top:24px;background:var(--teal);color:#fff;border:none;padding:13px 32px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:background 0.15s;letter-spacing:0.02em}
+  .start-btn:hover{background:var(--teal-light)}
+  
+  /* ACTION DASHBOARD */
+  .dash-section{margin-bottom:32px}
+  .dash-section-title{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600;color:var(--black);margin-bottom:16px}
+  .dash-badge{background:var(--teal-bg);color:var(--teal-dark);font-size:11px;font-weight:600;padding:3px 9px;border-radius:12px}
+  .dash-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius-lg);border:1px solid #e5eaeb;overflow:hidden;box-shadow:var(--card-shadow)}
+  .dash-table th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);padding:12px 16px;background:var(--bg);border-bottom:1px solid #e5eaeb;text-align:left}
+  .dash-table td{padding:8px 16px;font-size:13.5px;border-bottom:1px solid #f0f4f5;vertical-align:middle}
+  .dash-table tr:last-child td{border-bottom:none}
+  .dash-table tr:hover td{background:#f9fbfb}
+  .dash-table .priority-select,.dash-table .status-select{padding:5px 24px 5px 8px;font-size:12px;width:auto;min-width:80px}
+  .dash-who{width:52px;padding:5px 6px;font-size:12px;text-align:center}
+  .dash-empty{text-align:center;padding:32px;color:var(--muted);font-size:13px}
+  .pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap}
+  .pill-high{background:#fef2f2;color:#991b1b}
+  .pill-medium{background:#fffbeb;color:#92400e}
+  .pill-low{background:#f3f4f6;color:#374151}
+  .pill-todo{background:#fff;border:1px solid #d1d5db;color:#374151}
+  .pill-doing{background:#fef9c3;color:#713f12}
+  .pill-done{background:#dcfce7;color:#14532d}
+  
+  /* PLAN PAGE */
+  .plan-header{background:var(--white);border:1px solid #e5eaeb;border-radius:var(--radius-lg);padding:28px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-start;box-shadow:var(--card-shadow)}
+  .plan-meta{flex:1}
+  .plan-meta h1{font-size:24px;font-weight:700;color:var(--black);margin-bottom:4px}
+  .plan-meta p{font-size:13.5px;color:var(--muted)}
+  .print-btn{background:var(--teal);color:#fff;border:none;padding:10px 22px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.15s}
+  .print-btn:hover{background:var(--teal-light)}
+  .plan-section{background:var(--white);border:1px solid #e5eaeb;border-radius:var(--radius-lg);padding:28px 32px;margin-bottom:20px;box-shadow:var(--card-shadow)}
+  .plan-block-heading{font-size:17px;font-weight:700;color:var(--teal-dark);margin:0 0 18px;padding-bottom:12px;border-bottom:2px solid var(--teal-bg)}
+  .plan-para-block{margin-bottom:20px}
+  .plan-para-block:last-child{margin-bottom:0}
+  .plan-narrative{font-size:13.5px;color:#374151;line-height:1.65;margin:0 0 10px;font-style:italic}
+  .plan-linked-row{display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:6px;background:#f8fafa;border:1px solid #eaeef0;margin-bottom:5px;min-height:36px}
+  .plan-linked-row.plan-row-empty{opacity:0.45}
+  .plan-row-num{font-size:12px;font-weight:700;color:var(--teal);min-width:16px}
+  .plan-row-text{font-size:13.5px;color:var(--text);flex:1;line-height:1.45}
+  .plan-row-who{font-size:11px;font-weight:700;letter-spacing:0.08em;color:#6b7280;background:#e5eaeb;border-radius:4px;padding:2px 6px;flex-shrink:0}
+  .plan-empty{color:var(--muted);font-size:13px;padding:8px 0;font-style:italic}
+  
+  /* RESET BTN */
+  .reset-btn{margin-top:24px;background:transparent;color:#ef4444;border:1px solid #fca5a5;padding:9px 20px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s}
+  .reset-btn:hover{background:#fef2f2}
+  
+  /* NAV BUTTONS */
+  .nav-buttons{display:flex;gap:12px;margin-top:36px;padding-top:24px;border-top:1px solid #e5eaeb}
+  .btn-prev{background:transparent;border:1px solid #d1d5db;color:var(--muted);padding:10px 22px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.15s}
+  .btn-prev:hover{border-color:var(--teal);color:var(--teal)}
+  .btn-next{background:var(--teal);color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.15s}
+  .btn-next:hover{background:var(--teal-light)}
+  
+  @media print{
+    /* Hide absolutely everything except the plan print container */
+    body > *{display:none!important}
+    #plan-print-frame{display:block!important}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">Capital C Consulting</div>
+      <div class="sidebar-brand">Simple3 Plan</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Setup</div>
+      <div class="nav-item active" onclick="showSection('intro')" id="nav-intro">
+        <span class="nav-dot"></span>Introduction
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Assessment</div>
+      <div class="nav-item" onclick="showSection('marketing')" id="nav-marketing">
+        <span class="nav-dot"></span>Marketing
+      </div>
+      <div class="nav-item" onclick="showSection('growing')" id="nav-growing">
+        <span class="nav-dot"></span>Growing
+      </div>
+      <div class="nav-item" onclick="showSection('operating')" id="nav-operating">
+        <span class="nav-dot"></span>Operating
+      </div>
+      <div class="nav-item" onclick="showSection('managing')" id="nav-managing">
+        <span class="nav-dot"></span>Managing
+      </div>
+      <div class="nav-item" onclick="showSection('protecting')" id="nav-protecting">
+        <span class="nav-dot"></span>Protecting
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Outputs</div>
+      <div class="nav-item" onclick="showSection('dashboard')" id="nav-dashboard">
+        <span class="nav-dot"></span>Action Dashboard
+      </div>
+      <div class="nav-item" onclick="showSection('plan')" id="nav-plan">
+        <span class="nav-dot"></span>Plan
+      </div>
+    </div>
+    <div class="nav-progress">
+      <div class="nav-progress-fill" id="progressBar" style="width:0%"></div>
+    </div>
+    <div class="nav-progress-label" id="progressLabel">0 of 41 questions answered</div>
+    <div class="sidebar-footer">
+      <div class="save-indicator"><span class="save-dot"></span><span id="saveStatus">Auto-saved</span></div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- INTRO -->
+    <div class="section active" id="section-intro">
+      <div class="intro-hero">
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:rgba(15,212,204,0.7);margin-bottom:12px">Simple3 Plan © — Capital C Consulting</div>
+        <h1>Welcome to Simple3 Plan</h1>
+        <p>A practical business improvement framework that guides you through 41 targeted questions across five core areas — and generates a professional action plan you can start using today.</p>
+      </div>
+      <div class="intro-cards">
+        <div class="intro-card">
+          <div class="intro-num">1</div>
+          <h3>Complete the assessment</h3>
+          <p>Answer up to 3 responses per question across Marketing, Growing, Operating, Managing, and Protecting. Helpful prompts support you throughout.</p>
+        </div>
+        <div class="intro-card">
+          <div class="intro-num">2</div>
+          <h3>Set priorities and owners</h3>
+          <p>Assign who owns each action using their initials. Priority and status are set in the Action Dashboard.</p>
+        </div>
+        <div class="intro-card">
+          <div class="intro-num">3</div>
+          <h3>Review your dashboard</h3>
+          <p>All actions flow automatically into your Action Dashboard, grouped by business area and filterable by status and priority.</p>
+        </div>
+        <div class="intro-card">
+          <div class="intro-num">4</div>
+          <h3>Export your plan</h3>
+          <p>Generate a clean, print-ready Business Improvement Plan to share with your team, advisors, or clients.</p>
+        </div>
+      </div>
+      <div class="profile-form">
+        <h2>Business Profile</h2>
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="form-label">Business / Client Name</label>
+            <input class="form-input" id="p-name" type="text" placeholder="e.g. Acme Pty Ltd" oninput="saveProfile()">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Term of Plan</label>
+            <input class="form-input" id="p-term" type="text" placeholder="e.g. 12 months" oninput="saveProfile()">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Year Established</label>
+            <input class="form-input" id="p-est" type="text" placeholder="e.g. 2018" oninput="saveProfile()">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Industry</label>
+            <input class="form-input" id="p-industry" type="text" placeholder="e.g. Technology / Retail" oninput="saveProfile()">
+          </div>
+        </div>
+        <button class="start-btn" onclick="showSection('marketing')">Start Assessment →</button>
+        <button class="reset-btn" onclick="resetAll()">Reset all data</button>
+      </div>
+    </div>
+
+    <!-- MARKETING -->
+    <div class="section" id="section-marketing">
+      <div class="section-hero">
+        <div class="section-tag">Section 1 of 5</div>
+        <h1 class="section-title">Marketing</h1>
+        <p class="section-subtitle">Understand your customers, strengthen your brand, and sharpen your competitive position.</p>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Your Ideal Customers</div>
+        <div id="q-card-1"></div>
+        <div id="q-card-2"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Your Brand</div>
+        <div id="q-card-3"></div>
+        <div id="q-card-4"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Competition</div>
+        <div id="q-card-5"></div>
+        <div id="q-card-6"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Pricing</div>
+        <div id="q-card-7"></div>
+        <div id="q-card-8"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Promotion</div>
+        <div id="q-card-9"></div>
+        <div id="q-card-10"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Customer Experience</div>
+        <div id="q-card-11"></div>
+      </div>
+      <div class="nav-buttons">
+        <button class="btn-prev" onclick="showSection('intro')">← Introduction</button>
+        <button class="btn-next" onclick="showSection('growing')">Growing →</button>
+      </div>
+    </div>
+
+    <!-- GROWING -->
+    <div class="section" id="section-growing">
+      <div class="section-hero">
+        <div class="section-tag">Section 2 of 5</div>
+        <h1 class="section-title">Growing</h1>
+        <p class="section-subtitle">Develop your products and services, expand sales channels, and fuel growth.</p>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Products / Services</div>
+        <div id="q-card-12"></div>
+        <div id="q-card-13"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Sales</div>
+        <div id="q-card-14"></div>
+        <div id="q-card-15"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Growth</div>
+        <div id="q-card-16"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Funding Your Business</div>
+        <div id="q-card-17"></div>
+      </div>
+      <div class="nav-buttons">
+        <button class="btn-prev" onclick="showSection('marketing')">← Marketing</button>
+        <button class="btn-next" onclick="showSection('operating')">Operating →</button>
+      </div>
+    </div>
+
+    <!-- OPERATING -->
+    <div class="section" id="section-operating">
+      <div class="section-hero">
+        <div class="section-tag">Section 3 of 5</div>
+        <h1 class="section-title">Operating</h1>
+        <p class="section-subtitle">Improve operations, automate processes, and build a high-performing team.</p>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Improve Operations</div>
+        <div id="q-card-18"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Business Systems</div>
+        <div id="q-card-19"></div>
+        <div id="q-card-20"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Automation</div>
+        <div id="q-card-21"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Simplify Process</div>
+        <div id="q-card-22"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Key Personnel</div>
+        <div id="q-card-23"></div>
+        <div id="q-card-24"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Employee Engagement</div>
+        <div id="q-card-25"></div>
+        <div id="q-card-26"></div>
+      </div>
+      <div class="nav-buttons">
+        <button class="btn-prev" onclick="showSection('growing')">← Growing</button>
+        <button class="btn-next" onclick="showSection('managing')">Managing →</button>
+      </div>
+    </div>
+
+    <!-- MANAGING -->
+    <div class="section" id="section-managing">
+      <div class="section-hero">
+        <div class="section-tag">Section 4 of 5</div>
+        <h1 class="section-title">Managing</h1>
+        <p class="section-subtitle">Strengthen cash flow, measure performance, and control costs.</p>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Cash Flow</div>
+        <div id="q-card-27"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Key Performance Indicators</div>
+        <div id="q-card-28"></div>
+        <div id="q-card-29"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Expenses</div>
+        <div id="q-card-30"></div>
+        <div id="q-card-31"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Cost of Sale</div>
+        <div id="q-card-32"></div>
+        <div id="q-card-33"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Advisors / Key Relationships</div>
+        <div id="q-card-34"></div>
+        <div id="q-card-35"></div>
+      </div>
+      <div class="nav-buttons">
+        <button class="btn-prev" onclick="showSection('operating')">← Operating</button>
+        <button class="btn-next" onclick="showSection('protecting')">Protecting →</button>
+      </div>
+    </div>
+
+    <!-- PROTECTING -->
+    <div class="section" id="section-protecting">
+      <div class="section-hero">
+        <div class="section-tag">Section 5 of 5</div>
+        <h1 class="section-title">Protecting</h1>
+        <p class="section-subtitle">Safeguard your business through legal agreements, IP protection, risk management, and exit planning.</p>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Legal Agreements</div>
+        <div id="q-card-36"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Intellectual Property</div>
+        <div id="q-card-37"></div>
+        <div id="q-card-38"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Risk Management</div>
+        <div id="q-card-39"></div>
+        <div id="q-card-40"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Insurance</div>
+        <div id="q-card-41"></div>
+      </div>
+      <div class="topic-group">
+        <div class="topic-heading">Exit Plan</div>
+        <div id="q-card-42"></div>
+      </div>
+      <div class="nav-buttons">
+        <button class="btn-prev" onclick="showSection('managing')">← Managing</button>
+        <button class="btn-next" onclick="showSection('dashboard')">View Dashboard →</button>
+      </div>
+    </div>
+
+    <!-- ACTION DASHBOARD -->
+    <div class="section" id="section-dashboard">
+      <div class="section-hero">
+        <div class="section-tag">Output</div>
+        <h1 class="section-title">Action Dashboard</h1>
+        <p class="section-subtitle">All your improvement actions in one place. Update status and priorities as you progress.</p>
+      </div>
+      <div id="dashboard-content"></div>
+      <div class="nav-buttons">
+        <button class="btn-prev" onclick="showSection('protecting')">← Protecting</button>
+        <button class="btn-next" onclick="showSection('plan')">View Plan →</button>
+      </div>
+    </div>
+
+    <!-- PLAN -->
+    <div class="section" id="section-plan">
+      <div class="plan-header">
+        <div class="plan-meta">
+          <h1 id="plan-title">Business Improvement Plan</h1>
+          <p id="plan-meta-line">Capital C Consulting — Simple3 Plan</p>
+        </div>
+        <button class="print-btn" onclick="printPlan()">Print / Save PDF</button>
+      </div>
+      <div id="plan-content"></div>
+      <div class="nav-buttons" style="margin-top:16px">
+        <button class="btn-prev" onclick="showSection('dashboard')">← Dashboard</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ============================================================
+// DATA MODEL
+// ============================================================
+const QUESTIONS = [
+  {id:1,  section:'marketing', text:'List 3 attributes of your ideal customer profile', tips:['Demographics: age, sex, income, etc.','Behaviour: likes and dislikes','Location','Education level','Industry','Interests']},
+  {id:2,  section:'marketing', text:'List 3 ways you can specifically target your ideal customers', tips:['Advertise in specific publications','Review marketing strategy to ensure consistency with customer profile','Build sales prospect list around ideal customers','Change product/service to fit ideal customer','Ensure sales process aligns with ideal customer']},
+  {id:3,  section:'marketing', text:'List 3 of the most important characteristics of your brand', tips:['Visual identity (logo, colours, typography)','Brand voice and tone','Core values and promise','Reputation and perception','Customer experience','Consistency across channels']},
+  {id:4,  section:'marketing', text:'List 3 ways you can increase brand recognition', tips:['Consistent branding across all touchpoints','Social media presence and content strategy','Community involvement and sponsorships','Referral programs and word-of-mouth','PR and media coverage','Partner with complementary brands']},
+  {id:5,  section:'marketing', text:'List your 3 main competitors', tips:['Direct competitors (same product/service, same market)','Indirect competitors (different product, same customer need)','Emerging competitors to watch','Online and local competitors','Consider international players entering your market']},
+  {id:6,  section:'marketing', text:'List 3 ways you separate yourself from these competitors', tips:['Price/terms','Product/service features','Brand','Customer experience','Delivery timeframe','Convenience','Quality']},
+  {id:7,  section:'marketing', text:'List 3 ways you can enhance your current pricing models', tips:['Value-based pricing (charge what customers will pay)','Bundle products/services for higher perceived value','Introduce tiered pricing options','Review cost-plus margins regularly','Subscription or retainer models','Seasonal or promotional pricing strategies']},
+  {id:8,  section:'marketing', text:'List 3 ways you currently promote your business', tips:['Social media','Email marketing','Content marketing (blog, video, podcast)','Referral programs','Trade events and networking','Strategic partnerships','SEO and paid search (Google Ads)']},
+  {id:9,  section:'marketing', text:'List 3 additional ways you can promote your business', tips:['Promote your business to new audiences','Business referrals','Sell more to existing customers','Improve product/service','Expand distribution channels','Target new markets','Strategically partner with similar businesses','Sales incentive programs','Build sales prospect list','Encourage sales staff to up-sell','Set up a customer rewards program','Provide free trials/samples']},
+  {id:10, section:'marketing', text:'List 3 ways you provide a great customer experience', tips:['Develop customer personas','Collect feedback regularly','Map the customer journey','Analyse pain points','Offer tailored experiences','Streamline processes','Leverage automation','Be proactive - reach out with helpful tips, reminders, etc','Maintain clear and consistent messaging','Provide real-time support','Empower your team to handle enquiries and complaints','Exceed expectations','Segment your audience based on their preferences','Use CRM tools to keep track of customer preferences']},
+  {id:11, section:'marketing', text:'List 3 ways you could enhance your customer experience', tips:['Streamline the buying process','Reduce friction points in service delivery','Faster response times to enquiries','Better onboarding for new customers','Training staff on customer service excellence','Gather and act on customer feedback','Add self-service options','Personalise communications']},
+  {id:12, section:'growing', text:'List your top 3 products or services in your business', tips:['Your highest revenue generators','Products/services with the strongest margins','Most frequently purchased or requested','Best growth potential','Those aligned with your core expertise','Products/services customers value most']},
+  {id:13, section:'growing', text:'List 3 ways to increase profitability on these products/services', tips:['Increase sales efforts','Focus marketing efforts','Eliminate low value products/services','Decrease costs associated with products/service delivery','Ensure all employees are proficient on top products/services','Monitor competitors offering similar products/services']},
+  {id:14, section:'growing', text:'List 3 ways your business currently generates sales', tips:['Business promotions','Business referral program','Selling new products/services to existing customers','Product/service development','Strategic partnerships','Sales incentive program','Customer rewards program','Free trials/samples']},
+  {id:15, section:'growing', text:'List 3 additional ways your business can increase sales', tips:['Promote your business','Business referrals','Sell more to existing customers','Improve product/service','Expand distribution channels','Target new markets','Strategically partner with similar businesses','Sales incentive programs','Build sales prospect list','Encourage sales staff to up-sell','Set up a customer rewards program','Provide free trials/samples']},
+  {id:16, section:'growing', text:'List 3 ways you can grow your business', tips:['Open new locations or territories','Launch new products or services','Target new customer segments','Acquire a competitor or complementary business','Franchise or license the business model','Build strategic alliances or JVs','Expand online or e-commerce capability']},
+  {id:17, section:'growing', text:'List 3 ways you will find money to expand your business', tips:['Retained earnings and cash generation','Bank loans or business overdrafts','Private equity or angel investment','Government grants and innovation funding','Shareholder loans','Asset finance or leasing','Strategic partner investment']},
+  {id:18, section:'operating', text:'List 3 ways you can improve the operational performance of your business', tips:['Streamline your production or service delivery process','Reduce waste and inefficiency','Improve supplier relationships and terms','Implement or upgrade systems and technology','Standardise procedures and workflows','Set clear operational KPIs and track them']},
+  {id:19, section:'operating', text:'List your 3 most business-critical systems', tips:['Accounting/finance system (Xero, MYOB, QuickBooks)','CRM system (Salesforce, HubSpot)','Operations/project management software','HR and payroll system','Inventory or stock management','Communication tools (email, messaging platforms)']},
+  {id:20, section:'operating', text:'List 3 ways you ensure maximum uptime and reliability on your IT systems', tips:['Regular backups and disaster recovery testing','Cloud-based hosting for critical systems','Security patches and software updates','Cybersecurity protocols and training','IT support agreements and monitoring','Redundant internet connections']},
+  {id:21, section:'operating', text:'List 3 areas in your business where you can automate processes', tips:['Invoice creation and chasing','Email marketing sequences','Social media posting and scheduling','Appointment booking and reminders','Inventory reorder alerts','Payroll processing','Customer onboarding workflows']},
+  {id:22, section:'operating', text:'List 3 business processes which you can simplify', tips:['Customer onboarding process','Sales quoting and proposal process','Expense approvals and reporting','Staff rostering and scheduling','Stock ordering and management','Meeting structures and frequencies','Document management and filing']},
+  {id:23, section:'operating', text:'List the 3 most important people in your business', tips:['Key revenue generators (salespeople, account managers)','Technical or operational experts','Leadership and strategic roles','People with unique relationships or knowledge','Customer-facing staff with high impact','Those who are difficult to replace quickly']},
+  {id:24, section:'operating', text:'List 3 ways you can reduce your dependence on these people', tips:['Document processes and procedures thoroughly','Cross-train staff on critical functions','Build a succession plan for key roles','Recruit and develop backup capability','Use technology to capture institutional knowledge','Introduce team-based accountability']},
+  {id:25, section:'operating', text:'List 3 reasons why people like working in your business', tips:['Strong team culture and values','Flexible working arrangements','Career development and growth opportunities','Competitive remuneration and benefits','Recognition and reward programs','Transparent leadership and communication','Meaningful and purposeful work']},
+  {id:26, section:'operating', text:"List 3 ways to improve your employee's work experience in your business", tips:['Regular one-on-ones and feedback sessions','Clear career development pathways','Team events and culture building','Flexible work arrangements','Improved onboarding and induction','Online learning platforms and subscriptions','Leadership development for managers']},
+  {id:27, section:'managing', text:'List 3 ways you can improve your business cash flow', tips:['Invoice promptly and chase debtors rigorously','Negotiate better payment terms with suppliers','Reduce unnecessary inventory holding','Implement progress billing on projects','Improve debtor collection process','Consider invoice financing or factoring','Cut discretionary expenses temporarily']},
+  {id:28, section:'managing', text:'List 3 ways you specifically measure the performance of your business', tips:['Monthly profit and loss review','Revenue vs budget tracking','Debtor days outstanding','Customer acquisition cost','Net Promoter Score (NPS)','Gross margin by product/service line','Employee utilisation and productivity rates']},
+  {id:29, section:'managing', text:'List 3 additional ways you could measure the performance of your business', tips:['Customer lifetime value (CLV)','Sales conversion rate by channel','Average order value','Website traffic and lead conversion','Staff turnover rate','Operating cost as % of revenue','Pipeline value and velocity']},
+  {id:30, section:'managing', text:'List your 3 highest business operating expenses', tips:['Staff wages and on-costs','Rent and occupancy costs','Technology and software subscriptions','Marketing and advertising spend','Finance and interest costs','Insurance premiums','Logistics and delivery costs']},
+  {id:31, section:'managing', text:'List 3 ways you can save money on these expenses', tips:['Renegotiate supplier and vendor contracts','Move to cloud-based tools to reduce IT costs','Review and consolidate subscriptions','Implement energy efficiency measures','Explore shared services or outsourcing','Review insurance policies annually','Reduce non-essential travel and entertainment']},
+  {id:32, section:'managing', text:'List your 3 highest costs associated with products/services you sell', tips:['Direct materials and components','Contract labour or outsourced services','Freight and logistics costs','Packaging costs','Warranty and returns costs','Software licences embedded in product','Quality control and compliance costs']},
+  {id:33, section:'managing', text:'List 3 ways you can save money on these costs', tips:['Consolidate purchasing to improve supplier terms','Source alternative or local suppliers','Reduce waste and rework in production','Negotiate volume discounts','Review product specifications for cost efficiencies','Explore offshore production where applicable']},
+  {id:34, section:'managing', text:'List 3 advisors/ relationships that have most influence over your business', tips:['Accountant / financial advisor','Business banker','Lawyer / solicitor','Business coach or mentor','Key customers or strategic partners','Industry association or network','Board members or non-executive directors']},
+  {id:35, section:'managing', text:'List 3 ways to improve or create additional key business relationships', tips:['Hold regular structured meetings with each advisor','Share regular business updates and financials','Act on advice given and report back on outcomes','Introduce advisors to relevant networks','Ensure they understand your business goals','Review the relationship value annually']},
+  {id:36, section:'protecting', text:'List 3 contracts your business is missing or needs to review', tips:['Employment contracts for all staff','Standard client services agreement','Non-disclosure agreements (NDAs)','Supplier and vendor contracts','Shareholder or partnership agreement','Lease agreement for premises','Terms and conditions of sale']},
+  {id:37, section:'protecting', text:'List 3 items of intellectual property your business owns', tips:['Brand name and trademark','Logo and visual identity','Product designs or patents','Proprietary software or systems','Trade secrets and know-how','Customer lists and data','Published content and creative works']},
+  {id:38, section:'protecting', text:'List 3 ways you can protect your intellectual property', tips:['Register trademarks and patents','Include IP ownership clauses in employment contracts','Use NDAs with contractors and partners','Copyright mark all original content','Restrict access to trade secrets','Review IP protection with a lawyer annually']},
+  {id:39, section:'protecting', text:'List your 3 highest risks in your business', tips:['Loss of a key customer or major contract','Key person risk (departure or illness)','Regulatory or compliance risk','Cybersecurity or data breach','Supply chain disruption','Reputational or social media risk','Economic downturn affecting demand']},
+  {id:40, section:'protecting', text:'List 3 ways you can mitigate these risks', tips:['Diversify customer base to reduce concentration risk','Key person insurance and succession planning','Regular compliance reviews and legal updates','Implement cybersecurity protocols and training','Build alternative supplier relationships','Maintain a cash reserve or credit facility','Scenario planning and business continuity plan']},
+  {id:41, section:'protecting', text:'List 3 items that your business may need insurance', tips:['Public liability insurance','Professional indemnity insurance','Business interruption insurance','Key person/life insurance on directors','Cyber insurance','Workers compensation','Commercial vehicle or fleet insurance']},
+  {id:42, section:'protecting', text:'List 3 items to consider as part of your exit plan', tips:['Target exit timeframe and valuation goal','Identifying potential buyers or successors','Preparing the business for due diligence','Reducing key person dependency','Building recurring revenue and systems','Tax structuring with your accountant','Shareholder buy-sell agreements']}
+];
+
+const SECTIONS = ['intro','marketing','growing','operating','managing','protecting','dashboard','plan'];
+const SECTION_LABELS = {
+  marketing:'Marketing',growing:'Growing',operating:'Operating',managing:'Managing',protecting:'Protecting'
+};
+
+// App state
+let state = {
+  profile:{name:'',term:'',established:'',industry:''},
+  answers:{} // {qId_row: {text,priority,who,status}}
+};
+
+function getKey(qId,row){return `${qId}_${row}`}
+function getAnswer(qId,row){return state.answers[getKey(qId,row)]||{text:'',priority:'low',who:'',status:'todo'}}
+function setAnswer(qId,row,field,value){
+  const k=getKey(qId,row);
+  if(!state.answers[k]) state.answers[k]={text:'',priority:'low',who:'',status:'todo'};
+  state.answers[k][field]=value;
+  saveState();
+  updateProgress();
+  if(field==='status'||field==='priority') refreshDashboardIfVisible();
+}
+
+// ============================================================
+// PERSISTENCE
+// ============================================================
+function saveState(){
+  try{localStorage.setItem('simple3_state',JSON.stringify(state));document.getElementById('saveStatus').textContent='Saved';}
+  catch(e){}
+}
+function loadState(){
+  try{
+    const s=localStorage.getItem('simple3_state');
+    if(s) state=JSON.parse(s);
+  }catch(e){}
+}
+function saveProfile(){
+  state.profile.name=document.getElementById('p-name').value;
+  state.profile.term=document.getElementById('p-term').value;
+  state.profile.established=document.getElementById('p-est').value;
+  state.profile.industry=document.getElementById('p-industry').value;
+  saveState();
+}
+function resetAll(){
+  if(!confirm('Reset all data? This cannot be undone.')) return;
+  state={profile:{name:'',term:'',established:'',industry:''},answers:{}};
+  saveState();
+  location.reload();
+}
+
+// ============================================================
+// QUESTION CARD BUILDER
+// ============================================================
+function buildQuestionCard(q){
+  const tips = q.tips||[];
+  const tipsHtml = tips.length ? `
+    <div class="q-tips-toggle" onclick="toggleTips(${q.id})">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.2"/><text x="6.5" y="10" text-anchor="middle" font-size="8" fill="currentColor" font-weight="600">?</text></svg>
+      Show ideas &amp; prompts
+    </div>
+    <div class="q-tips" id="tips-${q.id}">
+      <div class="q-tips-title">Helpful ideas</div>
+      <ul>${tips.map(t=>`<li>${t}</li>`).join('')}</ul>
+    </div>
+  ` : '';
+
+  const INFO_QS = new Set([1,3,5,12,14,19,23,28,30,32,34,37,39]);
+  const isInfo = INFO_QS.has(q.id);
+
+  let rowsHtml = '';
+  for(let r=1;r<=3;r++){
+    const a=getAnswer(q.id,r);
+    rowsHtml+=`
+      <div class="answer-row">
+        <input type="text" placeholder="${isInfo?'Input':'Action'} ${r}..." value="${escHtml(a.text)}"
+          oninput="setAnswer(${q.id},${r},'text',this.value)"
+          onblur="updateProgress()">
+      </div>`;
+  }
+
+  return `
+    <div class="q-card">
+      <div class="q-header">
+        <div class="q-text">${q.text}</div>
+        <span class="q-number">Q${q.id}</span>
+      </div>
+      ${tipsHtml}
+      <div class="answer-col-headers">
+        <div class="col-hdr">${isInfo?'Information':'Action / Improvement'}</div>
+      </div>
+      ${rowsHtml}
+    </div>`;
+}
+
+function toggleTips(qId){
+  const el=document.getElementById(`tips-${qId}`);
+  const toggle=el.previousElementSibling;
+  if(el.classList.contains('open')){
+    el.classList.remove('open');
+    toggle.innerHTML=toggle.innerHTML.replace('Hide','Show');
+  }else{
+    el.classList.add('open');
+    toggle.innerHTML=toggle.innerHTML.replace('Show','Hide');
+  }
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+const DASH_TOPICS = [
+  {qId:2,  title:'Targeting Ideal Customers'},
+  {qId:4,  title:'Increase Brand Recognition'},
+  {qId:6,  title:'Beating the Competition'},
+  {qId:7,  title:'Enhance Pricing'},
+  {qId:8,  title:'New ways to Promote'},
+  {qId:9,  title:'Improve your existing customer relationships'},
+  {qId:10, title:'Enhance Customer Experience'},
+  {qId:11, title:'Improve your digital presence and online marketing'},
+  {qId:13, title:'Increase Profitability on Product/Services'},
+  {qId:15, title:'New ways to Generate Sales'},
+  {qId:16, title:'Growing business'},
+  {qId:17, title:'Funding growth'},
+  {qId:18, title:'Improving Operational Performance'},
+  {qId:20, title:'Improving System Uptime'},
+  {qId:21, title:'Adding Business Automation'},
+  {qId:22, title:'Simplifying Processes'},
+  {qId:24, title:'Reducing dependency on Key People'},
+  {qId:25, title:'Better Employee Engagement'},
+  {qId:26, title:'Develop your staff'},
+  {qId:27, title:'Improve Cashflow'},
+  {qId:29, title:'Measuring Performance'},
+  {qId:31, title:'Reduce Operating Expenses'},
+  {qId:33, title:'Reduce Product/Service Costs'},
+  {qId:35, title:'Improve Key External Relationships'},
+  {qId:36, title:'New Contracts Required'},
+  {qId:38, title:'Protecting Your IP'},
+  {qId:40, title:'Risk Reduction'},
+  {qId:41, title:'Add to your Insurance'},
+  {qId:42, title:'Update your Exit Plan'},
+];
+
+function buildDashboard(){
+  let html='';
+  for(const topic of DASH_TOPICS){
+    const rows=[];
+    for(let r=1;r<=3;r++){
+      const a=getAnswer(topic.qId,r);
+      if(a.text.trim()) rows.push({...a,r});
+    }
+    if(!rows.length) continue; // skip topics with no entries
+    const priClass=r=>r.priority==='high'?'high':r.priority==='medium'?'medium':'low';
+    const staClass=r=>r.status==='doing'?'doing':r.status==='done'?'done':'todo';
+    html+=`<div class="dash-section">
+      <div class="dash-section-title">
+        Q${topic.qId} &mdash; ${topic.title}
+        <span class="dash-badge">${rows.length} action${rows.length!==1?'s':''}</span>
+      </div>
+      <table class="dash-table">
+        <thead><tr><th style="width:55%">Action</th><th>Priority</th><th>Who</th><th>Status</th></tr></thead>
+        <tbody>`;
+    for(const a of rows){
+      html+=`<tr>
+        <td>${escHtml(a.text)}</td>
+        <td><select class="priority-select ${priClass(a)}" onchange="setAnswer(${topic.qId},${a.r},'priority',this.value);this.className='priority-select '+this.value">
+          <option value="high"${a.priority==='high'?' selected':''}>High</option>
+          <option value="medium"${a.priority==='medium'?' selected':''}>Medium</option>
+          <option value="low"${a.priority==='low'?' selected':''}>Low</option>
+        </select></td>
+        <td><input type="text" class="who-input dash-who" maxlength="3" placeholder="Who" value="${escHtml(a.who)}"
+          oninput="setAnswer(${topic.qId},${a.r},'who',this.value.toUpperCase().slice(0,3));this.value=this.value.toUpperCase().slice(0,3)"></td>
+        <td><select class="status-select ${staClass(a)}" onchange="setAnswer(${topic.qId},${a.r},'status',this.value);this.className='status-select '+this.value">
+          <option value="todo"${a.status==='todo'?' selected':''}>To Do</option>
+          <option value="doing"${a.status==='doing'?' selected':''}>Doing</option>
+          <option value="done"${a.status==='done'?' selected':''}>Done</option>
+        </select></td>
+      </tr>`;
+    }
+    html+=`</tbody></table></div>`;
+  }
+  if(!html) html=`<div class="dash-empty" style="padding:48px;text-align:center">No actions entered yet. Complete the assessment sections to populate your dashboard.</div>`;
+  document.getElementById('dashboard-content').innerHTML=html;
+}
+
+// ============================================================
+// PRINT PLAN
+// ============================================================
+function printPlan(){
+  const title = document.getElementById('plan-title').textContent;
+  const meta  = document.getElementById('plan-meta-line').textContent;
+  const content = document.getElementById('plan-content').innerHTML;
+
+  const win = window.open('','_blank','width=900,height=700');
+  win.document.write(`<!DOCTYPE html><html><head>
+<meta charset="utf-8">
+<title>${title}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Helvetica,Arial,sans-serif;font-size:13px;color:#1a1a1a;background:#fff;padding:28px 36px}
+  h1.plan-title{font-size:22px;font-weight:700;color:#111;margin-bottom:4px}
+  p.plan-meta{font-size:12px;color:#6b7280;margin-bottom:28px;padding-bottom:16px;border-bottom:2px solid #0f7370}
+  .plan-section{border:1px solid #d1d5db;border-radius:8px;padding:20px 24px;margin-bottom:18px;break-inside:avoid;page-break-inside:avoid}
+  .plan-block-heading{font-size:15px;font-weight:700;color:#0a5250;margin-bottom:14px;padding-bottom:10px;border-bottom:1.5px solid #d0e8e8}
+  .plan-para-block{margin-bottom:16px}
+  .plan-para-block:last-child{margin-bottom:0}
+  .plan-narrative{font-size:12.5px;color:#374151;line-height:1.6;margin-bottom:8px;font-style:italic}
+  .plan-linked-row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:5px;background:#f8fafa;border:1px solid #e5eaeb;margin-bottom:4px;break-inside:avoid;page-break-inside:avoid}
+  .plan-linked-row.plan-row-empty{display:none}
+  .plan-row-num{font-size:11px;font-weight:700;color:#0f7370;min-width:16px}
+  .plan-row-text{font-size:13px;color:#1a1a1a;flex:1;line-height:1.4}
+  .plan-row-who{display:none}
+  @media print{
+    body{padding:16px 24px}
+    .plan-section{break-inside:avoid;page-break-inside:avoid;margin-bottom:14px}
+    .plan-linked-row{break-inside:avoid;page-break-inside:avoid}
+    .plan-para-block{break-inside:avoid;page-break-inside:avoid}
+  }
+</style>
+</head><body>
+<h1 class="plan-title">${title}</h1>
+<p class="plan-meta">${meta}</p>
+${content}
+<script>window.onload=function(){window.print();}<\/script>
+</body></html>`);
+  win.document.close();
+}
+
+function refreshDashboardIfVisible(){
+  if(document.getElementById('section-dashboard').classList.contains('active')) buildDashboard();
+}
+
+// ============================================================
+// PLAN PAGE
+// ============================================================
+
+// Returns rendered rows for a given question id (rows 1-3)
+function planRows(qId){
+  let out='';
+  for(let r=1;r<=3;r++){
+    const a=getAnswer(qId,r);
+    const text=a.text.trim();
+    out+=`<div class="plan-linked-row${text?'':' plan-row-empty'}">
+      <span class="plan-row-num">${r}.</span>
+      <span class="plan-row-text">${text?escHtml(text):'<em style="color:#bbb">Not entered</em>'}</span>
+
+    </div>`;
+  }
+  return out;
+}
+
+function planBlock(heading, paragraphs){
+  // paragraphs: array of {text: string, qId: number|null}
+  // heading: string|null
+  let h = heading ? `<h2 class="plan-block-heading">${heading}</h2>` : '';
+  let body = paragraphs.map(p=>{
+    let rows = p.qId ? planRows(p.qId) : '';
+    return `<div class="plan-para-block">
+      <p class="plan-narrative">${p.text}</p>
+      ${rows}
+    </div>`;
+  }).join('');
+  return `<div class="plan-section">${h}${body}</div>`;
+}
+
+function buildPlan(){
+  const p=state.profile;
+  const name=p.name||'Your Business';
+  document.getElementById('plan-title').textContent=`${name} — Business Improvement Plan`;
+  document.getElementById('plan-meta-line').textContent=
+    [p.term&&`Term: ${p.term}`,p.established&&`Est. ${p.established}`,p.industry].filter(Boolean).join(' · ')||'Capital C Consulting — Simple3 Plan';
+
+  let html='';
+
+  // ── MAIN OFFERINGS ──────────────────────────────────────────
+  html+=planBlock('Main Offerings',[
+    {text:'The business has 3 main top selling products/services:', qId:12},
+    {text:"As these are the most important products/services to the business, it is vital that the business continues to focus on increasing their success. Over the next 12 months, the business will look into increasing its top 3 products/service's profitability by:", qId:13},
+    {text:'It is crucial that the business continues to generate sales in order to maintain a strong growth business. The business currently generates sales via:', qId:14},
+    {text:'At times, sales strategies need to be refreshed in order to build and create new customer relationships. Over the next 12 months, the business will look into increasing sales through:', qId:15},
+  ]);
+
+  // ── IDEAL CUSTOMER ──────────────────────────────────────────
+  html+=planBlock('Ideal Customer',[
+    {text:"The business's ideal customer is a profile used to better understand who the business is selling to. Attributes of the business's ideal customer are as follows:", qId:1},
+    {text:"Focused strategies should be developed with the intention of targeting the business's ideal customer. Over the next 12 months, the business will target our ideal customers by:", qId:2},
+  ]);
+
+  // ── WINNING IN THE MARKET ────────────────────────────────────
+  html+=planBlock('Winning in the Market',[
+    {text:"As the market stands today, the business's strongest competitors are:", qId:5},
+    {text:'In order to stand out in the market, the business has focused on the following unique selling points:', qId:6},
+  ]);
+
+  // ── THE CUSTOMER EXPERIENCE ──────────────────────────────────
+  html+=planBlock('The Customer Experience',[
+    {text:'Over the past 12 months, the business has provided great customer experience by offering:', qId:11},
+    {text:'Customer experience is vital to the business as it helps to strengthen our brand, boost our revenue and improve our customer loyalty. It is therefore important that we enhance it by:', qId:10},
+  ]);
+
+  // ── PRICING ──────────────────────────────────────────────────
+  html+=planBlock('Pricing',[
+    {text:"There are many benefits to improving the business's pricing model such as increasing customers and sales and therefore, the business may focus on the following pricing enhancements:", qId:7},
+  ]);
+
+  // ── THE BUSINESS BRAND ───────────────────────────────────────
+  html+=planBlock('The Business Brand',[
+    {text:"The business's brand can be personified by the following characteristics:", qId:3},
+    {text:"A strong brand is a unique competitive edge to any business. The business will focus on increasing the strength of its brand by:", qId:4},
+  ]);
+
+  // ── PROMOTING THE BUSINESS ───────────────────────────────────
+  html+=planBlock('Promoting the Business',[
+    {text:'The business is promoting its offerings to new and existing customers through the following ways:', qId:8},
+    {text:'Integrating new promotional strategies will strengthen our ability to reach new and existing customers. Over the next 12 months, the business will address the following new strategies to promote our business offerings:', qId:9},
+  ]);
+
+  // ── GROWING YOUR BUSINESS ────────────────────────────────────
+  html+=planBlock('Growing Your Business',[
+    {text:'It is crucial that no business is ever stagnant. The business will therefore look into the following opportunities to grow and reach new customers:', qId:16},
+    {text:'In order to fund growth initiatives, the business will explore the following avenues:', qId:17},
+  ]);
+
+  // ── PEOPLE IN YOUR BUSINESS ──────────────────────────────────
+  html+=planBlock('People in Your Business',[
+    {text:'Whilst all stakeholders play a significant role in the business, the most important people that affect the business are:', qId:23},
+    {text:'It is key to reduce the dependability on significant people in the business. The business will therefore take the following measures to mitigate against human resource risk:', qId:24},
+    {text:'We acknowledge that our business is a great place to work and our employees enjoy coming to work because we:', qId:25},
+    {text:"An employee's work satisfaction has an unfathomable effect on business practices and therefore over the next 12 months we will improve their workplace experience by:", qId:26},
+  ]);
+
+  // ── LEGAL AGREEMENTS ─────────────────────────────────────────
+  html+=planBlock('Legal Agreements',[
+    {text:'Legal contracts are vital to ensure the business operates safely and effectively. In order to safeguard the future of the business, we will acquire or review the following contracts:', qId:36},
+  ]);
+
+  // ── INTELLECTUAL PROPERTY ────────────────────────────────────
+  html+=planBlock('Intellectual Property',[
+    {text:'Intellectual property is the foundation of not only our products/services but the business itself. The most important items of intellectual property in the business are:', qId:37},
+    {text:"In the next 12 months we will protect the business's intellectual property by:", qId:38},
+  ]);
+
+  // ── RISK MANAGEMENT ──────────────────────────────────────────
+  html+=planBlock('Risk Management',[
+    {text:'It is critical that we are aware of our business risks and have therefore noted the following threats that may affect the business:', qId:39},
+    {text:"It's one thing acknowledging business risks, however alleviating them is even more important. The business will mitigate against its most significant risks by:", qId:40},
+  ]);
+
+  // ── INSURANCE ────────────────────────────────────────────────
+  html+=planBlock('Insurance',[
+    {text:'Another way to mitigate against risk is to purchase insurance. We will therefore look into acquiring insurance in the following areas of the business:', qId:41},
+  ]);
+
+  // ── EXIT PLANNING ────────────────────────────────────────────
+  html+=planBlock('Exit Planning',[
+    {text:'Planning for an eventual exit ensures the business builds long-term value and is attractive to future buyers or successors. The business will consider the following as part of its exit strategy:', qId:42},
+  ]);
+
+  document.getElementById('plan-content').innerHTML=html;
+}
+
+// ============================================================
+// PROGRESS
+// ============================================================
+function updateProgress(){
+  let answered=0;
+  for(const q of QUESTIONS){
+    for(let r=1;r<=3;r++){
+      if(getAnswer(q.id,r).text.trim()) answered++;
+    }
+  }
+  const total=QUESTIONS.length*3;
+  const pct=Math.round(answered/total*100);
+  document.getElementById('progressBar').style.width=pct+'%';
+  document.getElementById('progressLabel').textContent=`${answered} of ${total} answers entered`;
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showSection(name){
+  SECTIONS.forEach(s=>{
+    document.getElementById(`section-${s}`)?.classList.remove('active');
+    document.getElementById(`nav-${s}`)?.classList.remove('active');
+  });
+  document.getElementById(`section-${name}`)?.classList.add('active');
+  document.getElementById(`nav-${name}`)?.classList.add('active');
+  if(name==='dashboard') buildDashboard();
+  if(name==='plan') buildPlan();
+  window.scrollTo(0,0);
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function cap(s){return s?s[0].toUpperCase()+s.slice(1):''}
+
+// ============================================================
+// INIT
+// ============================================================
+function init(){
+  loadState();
+
+  // Render all question cards
+  for(const q of QUESTIONS){
+    const el=document.getElementById(`q-card-${q.id}`);
+    if(el) el.outerHTML=`<div id="q-card-${q.id}-wrapper">${buildQuestionCard(q)}</div>`;
+  }
+
+  // Load profile
+  document.getElementById('p-name').value=state.profile.name||'';
+  document.getElementById('p-term').value=state.profile.term||'';
+  document.getElementById('p-est').value=state.profile.established||'';
+  document.getElementById('p-industry').value=state.profile.industry||'';
+
+  updateProgress();
+}
+
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
